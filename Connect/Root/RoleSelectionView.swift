@@ -101,7 +101,13 @@ struct RoleSelectionView: View {
             HStack {
                 Spacer()
                 Button {
-                    goToSignUp(for: role)        // ← 화살표만 누르면 바로 이동
+                    if selected == role {
+                        goToSignUp(for: role) // 이미 선택됨 -> 가입 화면으로
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selected = role // 아직 선택 안 됨 -> 선택만
+                        }
+                    }
                 } label: {
                     ZStack {
                         Circle()
