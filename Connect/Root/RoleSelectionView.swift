@@ -64,37 +64,45 @@ struct RoleSelectionView: View {
             .padding(.bottom, 16)
         }
     }
+        
+    // 네비게이션 헬퍼 (재사용)
+    private func goToSignUp(for role: UserRole) {
+        switch role {
+        case .booker: appState.goToBookerSignUp()
+        case .owner: appState.goToOwnerSignUp()
+        }
+    }
 
     @ViewBuilder
     private func roleCard(role: UserRole, icon: String, title: String, description: String) -> some View {
         let isSelected = (selected == role)
         let bgColor: Color = (role == .booker && isSelected) ? AppColors.primary : AppColors.white
 
-        Button {
-            selected = role
-        } label: {
-            VStack(alignment: .leading, spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? AppColors.ink : AppColors.chipBG)
-                        .frame(width: 44, height: 44)
-                    Image(systemName: icon)
-                        .foregroundStyle(isSelected ? AppColors.white : AppColors.inkSecondary)
-                        .font(.system(size: 18, weight: .semibold))
-                }
+        VStack(alignment: .leading, spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(isSelected ? AppColors.ink : AppColors.chipBG)
+                    .frame(width: 44, height: 44)
+                Image(systemName: icon)
+                    .foregroundStyle(isSelected ? AppColors.white : AppColors.inkSecondary)
+                    .font(.system(size: 18, weight: .semibold))
+            }
 
-                Text(title)
-                    .font(.headlineMD())
-                    .foregroundStyle(AppColors.ink)
+            Text(title)
+                .font(.headlineMD())
+                .foregroundStyle(AppColors.ink)
 
-                Text(description)
-                    .font(.bodyLG())
-                    .foregroundStyle(AppColors.inkSecondary)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
+            Text(description)
+                .font(.bodyLG())
+                .foregroundStyle(AppColors.inkSecondary)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
 
-                HStack {
-                    Spacer()
+            HStack {
+                Spacer()
+                Button {
+                    goToSignUp(for: role)        // ← 화살표만 누르면 바로 이동
+                } label: {
                     ZStack {
                         Circle()
                             .fill(isSelected ? AppColors.primaryDeep : AppColors.surfaceContainerLow)
@@ -103,16 +111,21 @@ struct RoleSelectionView: View {
                             .foregroundStyle(isSelected ? AppColors.white : AppColors.inkSecondary)
                     }
                 }
+                .buttonStyle(.plain)
             }
-            .padding(20)
-            .background(bgColor)
-            .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
-                    .stroke(isSelected ? AppColors.primary : AppColors.borderStrong, lineWidth: isSelected ? 2 : 1)
-            )
         }
-        .buttonStyle(.plain)
+        .padding(20)
+        .background(bgColor)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
+                .stroke(isSelected ? AppColors.primary : AppColors.borderStrong, lineWidth: isSelected ? 2 : 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
+        .animation(.easeInOut(duration: 0.2), value: selected)
+        .onTapGesture {
+            selected = role               // ← 카드 본문 탭 = 선택만
+        }
     }
 }
 
