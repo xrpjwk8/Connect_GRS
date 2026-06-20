@@ -64,56 +64,7 @@ struct RoleSelectionView: View {
             .padding(.bottom, 16)
         }
     }
-
-//    @ViewBuilder
-//    private func roleCard(role: UserRole, icon: String, title: String, description: String) -> some View {
-//        let isSelected = (selected == role)
-//        let bgColor: Color = (role == .booker && isSelected) ? AppColors.primary : AppColors.white
-//
-//        Button {
-//            selected = role
-//        } label: {
-//            VStack(alignment: .leading, spacing: 14) {
-//                ZStack {
-//                    Circle()
-//                        .fill(isSelected ? AppColors.ink : AppColors.chipBG)
-//                        .frame(width: 44, height: 44)
-//                    Image(systemName: icon)
-//                        .foregroundStyle(isSelected ? AppColors.white : AppColors.inkSecondary)
-//                        .font(.system(size: 18, weight: .semibold))
-//                }
-//
-//                Text(title)
-//                    .font(.headlineMD())
-//                    .foregroundStyle(AppColors.ink)
-//
-//                Text(description)
-//                    .font(.bodyLG())
-//                    .foregroundStyle(AppColors.inkSecondary)
-//                    .multilineTextAlignment(.leading)
-//                    .fixedSize(horizontal: false, vertical: true)
-//
-//                HStack {
-//                    Spacer()
-//                    ZStack {
-//                        Circle()
-//                            .fill(isSelected ? AppColors.primaryDeep : AppColors.surfaceContainerLow)
-//                            .frame(width: 36, height: 36)
-//                        Image(systemName: "arrow.right")
-//                            .foregroundStyle(isSelected ? AppColors.white : AppColors.inkSecondary)
-//                    }
-//                }
-//            }
-//            .padding(20)
-//            .background(bgColor)
-//            .clipShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
-//            .overlay(
-//                RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous)
-//                    .stroke(isSelected ? AppColors.primary : AppColors.borderStrong, lineWidth: isSelected ? 2 : 1)
-//            )
-//        }
-//        .buttonStyle(.plain)
-//    }
+        
     // 네비게이션 헬퍼 (재사용)
     private func goToSignUp(for role: UserRole) {
         switch role {
@@ -171,6 +122,7 @@ struct RoleSelectionView: View {
                 .stroke(isSelected ? AppColors.primary : AppColors.borderStrong, lineWidth: isSelected ? 2 : 1)
         )
         .contentShape(RoundedRectangle(cornerRadius: AppRadius.xl, style: .continuous))
+        .animation(.easeInOut(duration: 0.2), value: selected)
         .onTapGesture {
             selected = role               // ← 카드 본문 탭 = 선택만
         }
