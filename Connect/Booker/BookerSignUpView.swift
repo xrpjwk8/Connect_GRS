@@ -3,6 +3,7 @@ import SwiftUI
 // _2, _8 — 예약자 회원가입
 struct BookerSignUpView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
 
     @State private var schoolName: String = ""
     @State private var departmentName: String = ""
@@ -16,7 +17,7 @@ struct BookerSignUpView: View {
             // 상단바
             HStack {
                 Button {
-                    appState.logout()
+                    dismiss()
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
@@ -167,6 +168,7 @@ struct BookerSignUpView: View {
             .padding(.vertical, 12)
         }
         .background(AppColors.surface.ignoresSafeArea())
+        .navigationBarHidden(true)
     }
 }
 
