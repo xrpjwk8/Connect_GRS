@@ -101,9 +101,12 @@ struct StoreProfileView: View {
                                     .padding(.vertical, 10)
                                     .background(AppColors.chipBG)
                                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                    .onChange(of: newKeyword) { value in
+                                        if value.count > 15 { newKeyword = String(value.prefix(15)) }
+                                    }
                                 Button {
                                     let k = newKeyword.trimmingCharacters(in: .whitespaces)
-                                    if !k.isEmpty { keywords.append(k); newKeyword = "" }
+                                    if !k.isEmpty && k.count <= 15 { keywords.append(k); newKeyword = "" }
                                 } label: {
                                     Text("추가")
                                         .font(.bodyLG())
