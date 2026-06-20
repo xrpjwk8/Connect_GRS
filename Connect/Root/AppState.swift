@@ -4,14 +4,18 @@ import SwiftUI
 @Observable
 final class AppState {
     enum Route: Hashable {
-        case roleSelection
-        case bookerSignUp
-        case ownerSignUp
+        case onboarding
         case bookerTabs
         case ownerTabs
     }
 
-    var route: Route = .roleSelection
+    enum OnboardingDestination: Hashable {
+        case bookerSignUp
+        case ownerSignUp
+    }
+
+    var route: Route = .onboarding
+    var onboardingPath: [OnboardingDestination] = []
     var selectedRole: UserRole? = nil
 
     // 예약자 프로필 (가입 시 입력 / 마이페이지에서 수정)
@@ -39,25 +43,28 @@ final class AppState {
 
     func goToBookerSignUp() {
         selectedRole = .booker
-        route = .bookerSignUp
+        onboardingPath = [.bookerSignUp]
     }
 
     func goToOwnerSignUp() {
         selectedRole = .owner
-        route = .ownerSignUp
+        onboardingPath = [.ownerSignUp]
     }
 
     func finishBookerSignUp() {
         route = .bookerTabs
+        onboardingPath = []
     }
 
     func finishOwnerSignUp() {
         route = .ownerTabs
+        onboardingPath = []
     }
 
     func logout() {
         selectedRole = nil
-        route = .roleSelection
+        route = .onboarding
+        onboardingPath = []
         // 프로필 정보 / 사진 / 검색 기록 초기화
         schoolName = ""
         departmentName = ""

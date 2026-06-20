@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 // _11 — 점주 회원가입 (비즈니스 인증, 2/2 단계)
 struct OwnerSignUpView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
 
     @State private var storeName: String = ""
     @State private var contact: String = ""
@@ -12,7 +13,7 @@ struct OwnerSignUpView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button { appState.logout() } label: {
+                Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(AppColors.ink)
@@ -115,6 +116,7 @@ struct OwnerSignUpView: View {
             .padding(.vertical, 12)
         }
         .background(AppColors.surface.ignoresSafeArea())
+        .navigationBarHidden(true)
     }
 }
 
