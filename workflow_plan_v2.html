@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대학가 단체 예약 플랫폼 '커넥트' - 마스터 워크플로우 기획서 v2</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-color: #6366f1;
+            --accent-light: #818cf8;
+            --owner-color: #f59e0b;
+            --booker-color: #10b981;
+            --border-color: #334155;
+            --block-color: #ef4444;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 50px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 40px;
+        }
+
+        .tag {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        h1 {
+            font-size: 2.6rem;
+            margin: 20px 0 10px 0;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+        }
+
+        .update-badge {
+            display: inline-block;
+            background-color: #334155;
+            color: var(--accent-light);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        section {
+            margin-bottom: 60px;
+        }
+
+        h2 {
+            font-size: 1.7rem;
+            border-left: 5px solid var(--accent-color);
+            padding-left: 15px;
+            margin-bottom: 30px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+        }
+
+        .card.owner { border-top: 5px solid var(--owner-color); }
+        .card.booker { border-top: 5px solid var(--booker-color); }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flow-list {
+            position: relative;
+            padding-left: 20px;
+            list-style: none;
+        }
+
+        .flow-list::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 10px;
+            bottom: 10px;
+            width: 2px;
+            background-color: var(--border-color);
+        }
+
+        .flow-item {
+            position: relative;
+            margin-bottom: 25px;
+            padding-left: 15px;
+        }
+
+        .flow-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 6px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            border: 2px solid var(--bg-color);
+        }
+
+        .card.owner .flow-item::before { background-color: var(--owner-color); }
+        .card.booker .flow-item::before { background-color: var(--booker-color); }
+
+        .flow-item strong {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+
+        .flow-item p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .badge.ui { background-color: #475569; color: #cbd5e1; }
+        .badge.sys { background-color: #312e81; color: #e0e7ff; }
+
+        /* 동적 동기화 섹션 디자인 */
+        .sync-box {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px dashed var(--accent-light);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .preview-ui {
+            background-color: #090d16;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+            font-family: monospace;
+            border: 1px solid #1e293b;
+        }
+
+        .preview-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #1e293b;
+        }
+        .preview-line:last-child { border-bottom: none; }
+
+        .status-tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .status-ok { background-color: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status-no { background-color: rgba(244, 63, 94, 0.2); color: #f43f5e; }
+        .status-block { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+
+        /* 점주 관리 화면 시각화 */
+        .owner-panel {
+            background-color: #111827;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .time-slot-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1f2937;
+            border: 1px solid #4b5563;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-slot-btn:hover {
+            border-color: var(--owner-color);
+            background-color: #374151;
+        }
+
+        .time-slot-btn.blocked {
+            border-color: var(--block-color);
+            background-color: rgba(239, 68, 68, 0.05);
+        }
+
+        .block-toggle-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        .blocked .block-toggle-text {
+            color: var(--block-color);
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 80px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <span class="tag">Master Workflow Architecture v2</span>
+            <h1>단체 예약 매칭 플랫폼 '커넥트' 워크플로우</h1>
+            <p class="subtitle">사용자 피드백, 실시간 동기화 및 오프라인 예약 대처 수동 블락 로직 반영</p>
+            <span class="update-badge">✨ 업데이트 완료: 점주용 '터치 한 번으로 타임 블락' UI/시스템 설계 추가</span>
+        </header>
+
+        <section>
+            <h2>1. 유저 정의 및 프로필 포맷 (User Profile Format)</h2>
+            <div class="grid-2">
+                <div class="card owner">
+                    <div class="card-title">👨‍🍳 1. 점주 회원 (Provider Side)</div>
+                    <p style="color: var(--text-muted); margin-top:0;"><strong>신뢰 형성 핵심 장치:</strong> 실명 기반 소통 및 게이미피케이션 테두리</p>
+                    <ul>
+                        <li><strong>프로필 사진:</strong> 매장 로고, 간판 사진 또는 신뢰감을 주는 점주 셀카</li>
+                        <li><strong>노출 이름 형식:</strong> <code style="color:var(--owner-color)">[가게명] 사장 [이름]</code> <br><small style="color:var(--text-muted)">(예: 땅땅치킨 사장 오효준)</small></li>
+                        <li><strong>신뢰도 시각화:</strong> 예약 성공률 및 노쇼 대응 지수에 따라 프로필에 👑 왕관 마크 또는 VIP 테두리 부여</li>
+                    </ul>
+                </div>
+                <div class="card booker">
+                    <div class="card-title">🙋‍♂️ 2. 예약자 회원 (Booker Side)</div>
+                    <p style="color: var(--text-muted); margin-top:0;"><strong>책임감 부여 장치:</strong> 소속 대학 공식 직책 노출</p>
+                    <ul>
+                        <li><strong>프로필 사진:</strong> 학교 마크, 학과 로고 또는 본인 신원 확인 셀카</li>
+                        <li><strong>노출 이름 형식:</strong> <code style="color:var(--booker-color)">[학교명] [학과/단체] [직책] [이름]</code> <br><small style="color:var(--text-muted)">(예: 연세대 인공지능학과 회장 윤태웅)</small></li>
+                        <li><strong>신뢰도 시각화:</strong> 노쇼 프리(No-Show Free) 인증 마크 및 거래 횟수별 엠블럼</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>2. 유저별 디테일 워크플로우 (Detailed Workflow)</h2>
+            <div class="grid-2">
+                
+                <div class="card owner">
+                    <div class="card-title">🍊 점주(Owner) 이용 흐름</div>
+                    <ol class="flow-list">
+                        <li class="flow-item">
+                            <strong>1. 앱 진입 및 권한 보완</strong>
+                            <p>앱 최초 실행 후 소셜 로그인 진행 (권한 팝업은 최초가 아닌 실제 필요 시점에 띄워 이탈 방지)</p>
+                        </li>
+                        <li class="flow-item">
+                            <strong>2. 신분 선택 및 가입 정보 입력</strong>
+                            <p>역할을 '점주'로 선택 후 가게명, 연락처, 매장 최대 수용 가능 인원 정보 기입</p>
+                        </li>
+                        <li class="flow-item">
+                            <strong>3. 사업자등록증 검증 <span class="badge sys">서버 확인</span></strong>
+                            <p>사업자등록증 사진 업로드 진행 후 대기. 관리자 대시보드에서 확인 후 수동 승인 완료 시 서비스 활성화</p>
+                        </li>
+                        <li class="flow-item">
+                            <strong>4. 오프라인 예약 대처 (타임 블락) <span class="badge ui">신규 기능</span></strong>
+                            <p>전화나 지인을 통해 매장 예약이 찬 경우, 사장님 캘린더 화면에서 해당 타임 블록을 <b>딸깍 한 번 터치하여 [수동 예약 차단]</b> 등록</p>
+                        </li>
+                        <li class="flow-item">
+                            <strong>5. 예약 요청 알림 수신 <span class="badge sys">실시간 푸시</span></strong>
+                            <p>예약자가 수동 잠금되지 않은 오픈 타임에 요청서를 보내면 실시간 푸시(FCM) 알림 수신</p>
+                        </li>
+                        <li class="flow-item">
+                            <strong>6. 요청서 확인 후 수락 (최종 매칭)</strong>
+                            <p>매장 상황 확인 후 '수락' 버튼 터치 시 즉시 예약 확정 및 실시간 타임 차감</p>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="card booker">
+                    <div class="card-title">🍏 예약자(Booker) 이용 흐름</div>
+                    <ol class="flow-list">
+                        <li class="flow-item">
+                            <strong>1. 앱 진입 및 권한 보완</strong>
+                            <p>앱 최초 실행 및 로그인. 푸시 알림, 카메라 등은 해당 액션이 일어날 때 유동적으로 권한 요청</p>
+                        </li>
+                        <li class="flow-item">
+                            <strong>2. 신분 선택 및 프로필 생성</strong>
+                            <p>역할을 '예약자'로 선택 후 학교명, 학과명, 직책(회장/부회장 등), 이름 선택 입력</p>
+                        </li>
+                        <li class="flow-item">
+                            <strong>3. 대학생 신원 인증 <span class="badge sys">서버 확인</span></strong>
+                            <p>에브리타임 캡처본 업로드 혹은 학교 웹메일(.ac.kr) 인증을 통해 허위 가입 및 노쇼 리스크 차단</p>
+                        </li>
+                        <li class="flow-item">
+                            <strong>4. 스마트 필터링 검색 <span class="badge ui">UI 피드백</span></strong>
+                            <p>장소(예: 신촌), 날짜, 시간, 인원수를 설정하여 탐색. 점주가 수동 블락했거나 앱으로 매칭 마감된 가게는 검색에서 자동 제외</p>
+                        </li>
+                        <li class="flow-item">
+                            <strong>5. 예약 공고 등록 및 예약금 결제</strong>
+                            <p>원하는 매장에 예약 요청서를 발송하며, 노쇼 방지를 위한 소액의 디포짓(예약금) 결제 진행</p>
+                        </li>
+                        <li class="flow-item">
+                            <strong>6. 매칭 완료 및 비상 양도 활성화 <span class="badge ui">킬러 기능</span></strong>
+                            <p>점주가 수락하면 매칭 확정. 만약 행사 취소 등 비상 상황 발생 시 <b>[예약 슬롯 양도]</b> 기능을 통해 타 학과/동아리에 권한 인계 가능</p>
+                        </li>
+                    </ol>
+                </div>
+
+            </div>
+        </section>
+
+        <section>
+            <h2>3. 오프라인 예외 대처: 원터치 타임 블락 (One-Touch Time Block)</h2>
+            <div class="card" style="border-left: 5px solid var(--block-color);">
+                <p style="margin-top:0;">
+                    점주가 오프라인 영업(전화, 워크인, 단골 예약)으로 특정 날짜의 좌석이 확보되었을 때, 다른 학생들이 요청서를 보내거나 탐색하는 피로도를 줄이기 위한 <b>점주 전용 스크린 작동 메커니즘</b>입니다.
+                </p>
+                
+                <h3 style="font-size:1.1rem; margin-bottom: 5px; color: var(--owner-color);">📱 점주용 예약 현황 관리 화면 (예시)</h3>
+                <p style="color: var(--text-muted); font-size:0.9rem; margin:0 0 15px 0;">* 오프라인 예약이 들어온 타임라인 버튼을 딸깍 터치하면 실시간으로 차단 상태가 토글됩니다.</p>
+                
+                <div class="owner-panel">
+                    <div style="font-size:0.9rem; font-weight: bold; color: var(--text-main); margin-bottom: 12px;">📅 6월 15일 (금요일) 영업 시간표 관리</div>
+                    
+                    <div class="time-slot-btn">
+                        <span>🕒 18:00 ~ 20:00</span>
+                        <span class="block-toggle-text">터치하여 블락하기 (현재 예약 가능)</span>
+                    </div>
+                    
+                    <div class="time-slot-btn blocked">
+                        <span>🕒 20:00 ~ 22:00</span>
+                        <span class="block-toggle-text">🔒 오프라인 예약으로 차단됨 (해제하려면 터치)</span>
+                    </div>
+                    
+                    <div class="time-slot-btn">
+                        <span>🕒 22:00 ~ 24:00</span>
+                        <span class="block-toggle-text">터치하여 블락하기 (현재 예약 가능)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="card sync-box">
+                <div class="card-title" style="color: var(--accent-light);">⚡ 4. 통합 실시간 예약 가능 현황 (예약자 화면 반영 결과)</div>
+                <p style="margin-top: 0; color:#cbd5e1;">
+                    앱 내부 매칭 데이터와 점주의 <b>[원터치 타임 블락]</b> 상태가 결합되어 예약자 앱 상세페이지에 실시간으로 최종 반영되는 UI 구조입니다.
+                </p>
+                
+                <div class="preview-ui">
+                    <div style="color: var(--owner-color); font-weight: bold; margin-bottom: 15px;">🏢 땅땅치킨 신촌점 (최대 수용: 80석)</div>
+                    <div style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px;">📅 6월 15일 (금요일) 예약 현황</div>
+                    
+                    <div class="preview-line">
+                        <span>• 18:00 ~ 20:00 (잔여 80석)</span>
+                        <span class="status-tag status-ok">● 예약 가능</span>
+                    </div>
+                    <div class="preview-line" style="opacity: 0.6;">
+                        <span>• 20:00 ~ 22:00 (점주가 오프라인 예약으로 차단함)</span>
+                        <span class="status-tag status-block">🔒 예약 불가 (매장 마감)</span>
+                    </div>
+                    <div class="preview-line">
+                        <span>• 22:00 ~ 24:00 (잔여 80석)</span>
+                        <span class="status-tag status-ok">● 예약 가능</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="footer">
+            <p>&copy; 2026 대학가 단체 예약 매칭 서비스 '과연(과대표의 연회)' 기획서. All rights reserved.</p>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>모이다 · 단체예약 매칭 앱 디자인</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F5F3;
+    --canvas: #ECECE8;
+    --frame: #FFFFFF;
+    --ink: #0F0F0F;
+    --ink-2: #3D3D3D;
+    --ink-3: #8A8A8A;
+    --line: #ECECEC;
+    --line-2: #F4F4F4;
+    --accent: #D6FF3D;        /* 라임 포인트 */
+    --accent-ink: #0F0F0F;
+    --chip: #F4F4F2;
+    --success: #16A34A;
+    --warn: #EAB308;
+    --danger: #EF4444;
+    --shadow: 0 30px 60px -20px rgba(15,15,15,0.18), 0 10px 20px -10px rgba(15,15,15,0.08);
+  }
+  * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+  html, body { margin: 0; padding: 0; background: var(--canvas);
+    font-family: "Noto Sans KR", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--ink); }
+  a { color: inherit; text-decoration: none; }
+
+  /* ===== Header ===== */
+  .doc-header {
+    padding: 56px 48px 24px;
+    max-width: 1680px;
+    margin: 0 auto;
+  }
+  .doc-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 600;
+  }
+  .doc-eyebrow::before {
+    content: ""; width: 24px; height: 1px; background: var(--ink-3);
+  }
+  .doc-title {
+    font-size: 56px; line-height: 1.05; letter-spacing: -0.03em;
+    font-weight: 800; margin: 14px 0 12px;
+  }
+  .doc-title em {
+    font-style: normal; background: var(--accent);
+    padding: 0 12px; border-radius: 6px;
+  }
+  .doc-sub {
+    color: var(--ink-2); font-size: 16px; max-width: 640px; line-height: 1.6;
+  }
+  .doc-meta {
+    display: flex; gap: 28px; margin-top: 28px;
+    font-size: 13px; color: var(--ink-3);
+  }
+  .doc-meta b { color: var(--ink); font-weight: 600; }
+
+  /* ===== Stage ===== */
+  .stage {
+    max-width: 1680px; margin: 0 auto;
+    padding: 24px 48px 80px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 36px;
+    align-items: start;
+  }
+  @media (max-width: 1400px) {
+    .stage { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 740px) {
+    .stage { grid-template-columns: 1fr; padding: 24px 16px 60px; }
+    .doc-header { padding: 40px 16px 16px; }
+    .doc-title { font-size: 36px; }
+  }
+
+  .screen-label {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .screen-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--ink); color: #fff;
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .screen-name { font-size: 14px; font-weight: 600; }
+  .screen-desc { font-size: 12px; color: var(--ink-3); margin-left: 6px; }
+
+  /* ===== Phone Frame ===== */
+  .phone {
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+    background: var(--frame);
+    border-radius: 36px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(0,0,0,0.04);
+    position: relative;
+  }
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 22px 6px; font-size: 12px; font-weight: 600;
+  }
+  .status-icons { display: flex; gap: 5px; align-items: center; }
+  .status-icons svg { width: 14px; height: 14px; }
+  .phone-body { padding: 8px 18px 22px; }
+
+  /* ===== Generic ===== */
+  .row { display: flex; align-items: center; }
+  .between { justify-content: space-between; }
+  .gap-6 { gap: 6px; } .gap-8 { gap: 8px; } .gap-10 { gap: 10px; } .gap-12 { gap: 12px; }
+  .mt-4 { margin-top: 4px; } .mt-8 { margin-top: 8px; } .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; } .mt-20 { margin-top: 20px; } .mt-24 { margin-top: 24px; }
+  .h-line { height: 1px; background: var(--line); margin: 16px 0; }
+
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--chip); display: flex;
+    align-items: center; justify-content: center;
+  }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  /* ===== Top app bar ===== */
+  .topbar { display: flex; justify-content: space-between; align-items: center; padding: 6px 0 14px; }
+  .logo {
+    font-weight: 800; font-size: 20px; letter-spacing: -0.02em;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .logo-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px rgba(214,255,61,0.25);
+  }
+  .location {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 13px; color: var(--ink-2); font-weight: 500;
+  }
+
+  /* ===== Search ===== */
+  .search {
+    background: var(--chip); border-radius: 14px;
+    padding: 12px 14px; display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--ink-3);
+  }
+
+  /* ===== Chips ===== */
+  .chips { display: flex; gap: 6px; overflow: hidden; }
+  .chip {
+    padding: 8px 12px; border-radius: 999px;
+    background: var(--chip); font-size: 12px;
+    color: var(--ink-2); white-space: nowrap; font-weight: 500;
+  }
+  .chip.active { background: var(--ink); color: #fff; }
+
+  /* ===== Hero card ===== */
+  .hero {
+    margin-top: 16px;
+    border-radius: 20px;
+    background: var(--ink);
+    color: #fff;
+    padding: 18px 18px 16px;
+    position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: ""; position: absolute;
+    right: -40px; bottom: -40px;
+    width: 160px; height: 160px;
+    background: var(--accent); border-radius: 50%;
+    opacity: 0.9;
+  }
+  .hero-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    color: #fff; padding: 4px 10px;
+    border-radius: 999px; font-size: 11px;
+    font-weight: 500;
+  }
+  .hero-title {
+    font-size: 18px; font-weight: 700; line-height: 1.35;
+    margin: 10px 0 4px;
+  }
+  .hero-sub { font-size: 12px; color: rgba(255,255,255,0.7); position: relative; z-index: 2; }
+  .hero-cta {
+    position: relative; z-index: 2;
+    margin-top: 14px;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 600;
+    background: #fff; color: var(--ink);
+    padding: 8px 12px; border-radius: 999px;
+  }
+
+  /* ===== Section title ===== */
+  .sect-title { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 0 12px; }
+  .sect-title h3 { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .sect-title a { font-size: 12px; color: var(--ink-3); }
+
+  /* ===== Place list ===== */
+  .place {
+    display: flex; gap: 12px; padding: 12px 0;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .place:last-child { border-bottom: 0; }
+  .place-img {
+    width: 64px; height: 64px; border-radius: 12px;
+    flex-shrink: 0;
+    background-size: cover; background-position: center;
+  }
+  .pi1 { background-image: linear-gradient(135deg,#F4A261,#E76F51); }
+  .pi2 { background-image: linear-gradient(135deg,#2A9D8F,#264653); }
+  .pi3 { background-image: linear-gradient(135deg,#F8C9D4,#E5989B); }
+  .pi4 { background-image: linear-gradient(135deg,#8E9AAF,#4A4E69); }
+  .pi5 { background-image: linear-gradient(135deg,#D6FF3D,#9FBA1D); }
+  .place-info { flex: 1; min-width: 0; }
+  .place-name {
+    font-size: 14px; font-weight: 600; line-height: 1.25;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .place-cat {
+    font-size: 11px; color: var(--ink-3);
+    margin-top: 3px;
+  }
+  .place-meta {
+    display: flex; gap: 10px; margin-top: 6px;
+    font-size: 11px; color: var(--ink-2);
+  }
+  .place-meta b { color: var(--ink); font-weight: 600; }
+  .badge-mini {
+    display: inline-flex; align-items: center; gap: 3px;
+    background: var(--accent); color: var(--accent-ink);
+    padding: 3px 7px; border-radius: 6px;
+    font-size: 10px; font-weight: 600;
+  }
+
+  /* ===== Tab bar ===== */
+  .tabbar {
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: space-around;
+    padding: 10px 0 14px;
+    margin: 18px -18px -22px;
+    background: #fff;
+  }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 10px; color: var(--ink-3); font-weight: 500; }
+  .tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+  .tab.active { color: var(--ink); font-weight: 600; }
+
+  /* ===== Detail screen ===== */
+  .detail-hero {
+    margin: -8px -18px 0;
+    height: 200px;
+    background-image: linear-gradient(135deg,#1F2937,#0F0F0F);
+    position: relative;
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
+  }
+  .detail-hero::after {
+    content: ""; position: absolute;
+    width: 220px; height: 220px; right: -50px; top: -40px;
+    background: var(--accent); border-radius: 50%; opacity: 0.85;
+  }
+  .detail-hero-top {
+    position: relative; z-index: 2;
+    display: flex; justify-content: space-between;
+    padding: 16px;
+  }
+  .detail-hero-top .icon-btn {
+    background: rgba(255,255,255,0.9);
+  }
+  .detail-tag {
+    position: absolute; left: 16px; bottom: 16px; z-index: 2;
+    background: #fff; padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+  }
+  .place-title {
+    font-size: 20px; font-weight: 800; margin-top: 16px;
+    letter-spacing: -0.01em;
+  }
+  .place-sub { color: var(--ink-3); font-size: 12px; margin-top: 4px; }
+  .stat-row {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    background: var(--chip); border-radius: 14px;
+    padding: 12px; margin-top: 14px;
+  }
+  .stat { text-align: center; }
+  .stat + .stat { border-left: 1px solid #E0E0DD; }
+  .stat-val { font-size: 14px; font-weight: 700; }
+  .stat-lab { font-size: 10px; color: var(--ink-3); margin-top: 2px; }
+
+  .form-label { font-size: 12px; color: var(--ink-3); font-weight: 500; margin-bottom: 6px; }
+  .field {
+    background: var(--chip); border-radius: 12px;
+    padding: 12px 14px; font-size: 13px; font-weight: 500;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .field svg { width: 16px; height: 16px; color: var(--ink-3); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .time-grid {
+    display: grid; grid-template-columns: repeat(4,1fr); gap: 6px;
+  }
+  .time-cell {
+    background: var(--chip); border-radius: 8px;
+    padding: 8px 0; text-align: center;
+    font-size: 11px; font-weight: 600;
+  }
+  .time-cell.active { background: var(--ink); color: #fff; }
+  .time-cell.dis { color: #C7C7C5; }
+
+  .cta {
+    background: var(--ink); color: #fff;
+    padding: 16px; border-radius: 16px;
+    text-align: center; font-weight: 700; font-size: 14px;
+    margin-top: 18px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .cta.accent { background: var(--accent); color: var(--ink); }
+
+  /* ===== My reservations ===== */
+  .seg {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    background: var(--chip); padding: 4px; border-radius: 12px;
+    margin-top: 12px;
+  }
+  .seg-tab { text-align: center; padding: 8px 0; font-size: 12px; font-weight: 500; color: var(--ink-3); border-radius: 9px; }
+  .seg-tab.active { background: #fff; color: var(--ink); font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+  .res-card {
+    border: 1px solid var(--line);
+    border-radius: 16px; padding: 14px;
+    margin-top: 12px;
+  }
+  .res-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .status-pill {
+    font-size: 10px; padding: 4px 8px; border-radius: 999px;
+    font-weight: 600;
+  }
+  .pill-confirm { background: #E8F8EE; color: var(--success); }
+  .pill-wait    { background: #FFF7CC; color: #8A6D00; }
+  .pill-cancel  { background: #FDECEC; color: var(--danger); }
+  .res-meta {
+    display: flex; gap: 10px; margin-top: 10px;
+    font-size: 11px; color: var(--ink-2);
+  }
+  .res-meta b { color: var(--ink); font-weight: 600; }
+  .res-actions {
+    display: flex; gap: 6px; margin-top: 12px;
+  }
+  .btn-ghost {
+    flex: 1; padding: 9px 0; text-align: center;
+    border-radius: 10px; font-size: 11px; font-weight: 600;
+    background: var(--chip); color: var(--ink);
+  }
+  .btn-dark {
+    flex: 1; padding: 9px 0; text-align: center;
+    border-radius: 10px; font-size: 11px; font-weight: 600;
+    background: var(--ink); color: #fff;
+  }
+
+  /* ===== Owner dashboard ===== */
+  .owner-hi { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+  .owner-sub { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(2,1fr); gap: 8px;
+    margin-top: 14px;
+  }
+  .kpi {
+    background: var(--chip); border-radius: 14px; padding: 14px;
+  }
+  .kpi.dark { background: var(--ink); color: #fff; grid-column: span 2; position: relative; overflow: hidden; }
+  .kpi.dark::after {
+    content: ""; position: absolute; right: -30px; top: -30px;
+    width: 100px; height: 100px; background: var(--accent);
+    border-radius: 50%; opacity: 0.85;
+  }
+  .kpi-lab { font-size: 11px; color: var(--ink-3); font-weight: 500; }
+  .kpi.dark .kpi-lab { color: rgba(255,255,255,0.7); }
+  .kpi-val { font-size: 20px; font-weight: 800; margin-top: 4px; letter-spacing: -0.01em; position: relative; z-index: 2; }
+  .kpi-delta { font-size: 10px; color: var(--success); font-weight: 600; margin-top: 4px; }
+  .kpi.dark .kpi-delta { color: var(--accent); }
+
+  .req-card {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    margin-top: 10px;
+  }
+  .req-head { display: flex; gap: 10px; align-items: center; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg,#FFD1A1,#F4A261);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: #fff;
+  }
+  .avatar.a2 { background: linear-gradient(135deg,#A1C9F4,#4361EE); }
+  .avatar.a3 { background: linear-gradient(135deg,#C9F4A1,#7AB55C); }
+  .req-name { font-size: 13px; font-weight: 700; }
+  .req-tag { font-size: 10px; color: var(--ink-3); }
+  .req-msg {
+    margin-top: 10px;
+    font-size: 12px; color: var(--ink-2);
+    line-height: 1.5;
+    background: var(--chip);
+    padding: 10px 12px; border-radius: 10px;
+  }
+  .req-info {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 6px;
+    margin-top: 10px;
+  }
+  .req-info > div {
+    background: var(--line-2); border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .req-info b { display: block; font-size: 12px; font-weight: 700; }
+  .req-info span { font-size: 10px; color: var(--ink-3); }
+
+  /* ===== Bottom note ===== */
+  .doc-foot {
+    max-width: 1680px; margin: 0 auto;
+    padding: 0 48px 60px;
+    color: var(--ink-3); font-size: 13px;
+    border-top: 1px solid var(--line); padding-top: 22px;
+  }
+  .doc-foot b { color: var(--ink); font-weight: 600; }
+  .pal { display: inline-flex; gap: 6px; margin-left: 6px; vertical-align: middle; }
+  .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid rgba(0,0,0,0.06); }
+</style>
+</head>
+<body>
+
+<header class="doc-header">
+  <span class="doc-eyebrow">Group Reservation Matching · UI Concept</span>
+  <h1 class="doc-title">대학생과 점주를<br/>잇는 <em>단체예약</em> 플랫폼.</h1>
+  <p class="doc-sub">동아리·과방·MT·종강파티까지. "모이다"는 인원·예산·동선이 맞는 가게를 빠르게 매칭하고, 점주는 단체 예약만 따로 관리합니다.</p>
+  <div class="doc-meta">
+    <span><b>App</b> · 모이다 (Moida)</span>
+    <span><b>Platform</b> · iOS / Android</span>
+    <span><b>Style</b> · Minimal Modern</span>
+    <span><b>Palette</b>
+      <span class="pal">
+        <span class="sw" style="background:#0F0F0F"></span>
+        <span class="sw" style="background:#D6FF3D"></span>
+        <span class="sw" style="background:#F5F5F3"></span>
+        <span class="sw" style="background:#FFFFFF"></span>
+      </span>
+    </span>
+  </div>
+</header>
+
+<section class="stage">
+
+  <!-- ============ SCREEN 1: HOME ============ -->
+  <div>
+    <div class="screen-label">
+      <div class="screen-num">1</div>
+      <div class="screen-name">메인 / 홈</div>
+      <div class="screen-desc">둘러보기 + 추천</div>
+    </div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 18h3v2H2zM7 14h3v6H7zM12 10h3v10h-3zM17 5h3v15h-3z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="18" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="1.5"/><rect x="20" y="10" width="2" height="4" fill="currentColor"/></svg>
+        </div>
+      </div>
+      <div class="phone-body">
+
+        <div class="topbar">
+          <div class="logo"><span class="logo-dot"></span>모이다</div>
+          <div class="row gap-8">
+            <div class="location">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-7-7.58-7-13a7 7 0 0114 0c0 5.42-7 13-7 13z"/><circle cx="12" cy="9" r="2.5"/></svg>
+              서울 · 신촌
+            </div>
+            <div class="icon-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.4-1.4A7 7 0 005 11v3.3L3.6 17H8m2 0a3 3 0 006 0"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          어떤 단체예약을 찾고 계세요?
+        </div>
+
+        <div class="chips mt-12">
+          <div class="chip active">전체</div>
+          <div class="chip">술집</div>
+          <div class="chip">고깃집</div>
+          <div class="chip">파티룸</div>
+          <div class="chip">노래방</div>
+        </div>
+
+        <div class="hero">
+          <span class="hero-tag">이번주 추천</span>
+          <div class="hero-title">20명 단체석<br/>2시간 무제한 +20%</div>
+          <div class="hero-sub" style="margin-top:4px;">신촌 · 종강파티 시즌 특가</div>
+          <div class="hero-cta">바로 예약 →</div>
+        </div>
+
+        <div class="sect-title">
+          <h3>가까운 단체석</h3>
+          <a>전체보기</a>
+        </div>
+
+        <div>
+          <div class="place">
+            <div class="place-img pi2"></div>
+            <div class="place-info">
+              <div class="place-name">
+                <span>이자카야 모리</span>
+                <span class="badge-mini">★ 4.9</span>
+              </div>
+              <div class="place-cat">이자카야 · 신촌역 3번출구 · 320m</div>
+              <div class="place-meta">
+                <span>최대 <b>30명</b></span>
+                <span>· 인당 <b>22,000원~</b></span>
+              </div>
+            </div>
+          </div>
+          <div class="place">
+            <div class="place-img pi1"></div>
+            <div class="place-info">
+              <div class="place-name">
+                <span>구이구이 정육식당</span>
+                <span class="badge-mini">★ 4.7</span>
+              </div>
+              <div class="place-cat">고깃집 · 연대 후문 · 500m</div>
+              <div class="place-meta">
+                <span>최대 <b>40명</b></span>
+                <span>· 인당 <b>18,000원~</b></span>
+              </div>
+            </div>
+          </div>
+          <div class="place">
+            <div class="place-img pi3"></div>
+            <div class="place-info">
+              <div class="place-name">
+                <span>파티룸 더루프</span>
+                <span class="badge-mini">★ 4.8</span>
+              </div>
+              <div class="place-cat">파티룸 · 이대역 · 410m</div>
+              <div class="place-meta">
+                <span>최대 <b>50명</b></span>
+                <span>· 인당 <b>9,000원~</b></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabbar">
+          <div class="tab active">
+            <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1V11z"/></svg>
+            홈
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            검색
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+            내 예약
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+            마이
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============ SCREEN 2: DETAIL + RESERVE ============ -->
+  <div>
+    <div class="screen-label">
+      <div class="screen-num">2</div>
+      <div class="screen-name">가게 상세 · 예약 신청</div>
+      <div class="screen-desc">정보 + 신청 폼</div>
+    </div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 18h3v2H2zM7 14h3v6H7zM12 10h3v10h-3zM17 5h3v15h-3z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="18" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="1.5"/><rect x="20" y="10" width="2" height="4" fill="currentColor"/></svg>
+        </div>
+      </div>
+      <div class="phone-body">
+
+        <div class="detail-hero">
+          <div class="detail-hero-top">
+            <div class="icon-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+            </div>
+            <div class="row gap-8">
+              <div class="icon-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a1 1 0 001 1h14a1 1 0 001-1v-8"/><path d="M16 6l-4-4-4 4M12 2v14"/></svg>
+              </div>
+              <div class="icon-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.5-2 2-3.5 2-5a5 5 0 00-10 0c0-3-2.2-5-5-5S1 6 1 9c0 4 5 9 11 13 1.4-1 2.7-2 3.9-3"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="detail-tag">★ 4.9 · 단체 인증</div>
+        </div>
+
+        <div class="place-title">이자카야 모리 <span style="color:var(--ink-3); font-weight:500; font-size:13px;">신촌점</span></div>
+        <div class="place-sub">이자카야 · 신촌역 3번출구 320m · 22:00까지</div>
+
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat-val">30명</div>
+            <div class="stat-lab">단체 수용</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">2.2만원~</div>
+            <div class="stat-lab">인당 평균</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val">98%</div>
+            <div class="stat-lab">수락률</div>
+          </div>
+        </div>
+
+        <div class="sect-title">
+          <h3>단체 예약 신청</h3>
+        </div>
+
+        <div class="form-label">날짜</div>
+        <div class="field">
+          <span>5월 24일 (금)</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+        </div>
+
+        <div class="mt-12">
+          <div class="form-label">시간</div>
+          <div class="time-grid">
+            <div class="time-cell dis">17:00</div>
+            <div class="time-cell">18:00</div>
+            <div class="time-cell active">19:00</div>
+            <div class="time-cell">20:00</div>
+          </div>
+        </div>
+
+        <div class="grid-2 mt-12">
+          <div>
+            <div class="form-label">인원</div>
+            <div class="field">
+              <span>18명</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M17 11a3 3 0 100-6M3 21a6 6 0 0112 0M16 21a6 6 0 015-5.9"/></svg>
+            </div>
+          </div>
+          <div>
+            <div class="form-label">예산</div>
+            <div class="field">
+              <span>~25,000</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7H14.5a3.5 3.5 0 010 7H6"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-12">
+          <div class="form-label">요청 사항</div>
+          <div class="field" style="align-items:flex-start; padding:14px;">
+            <span style="color:var(--ink-2); line-height:1.5;">생일 케이크 반입 가능할까요? 학과 종강파티입니다 :)</span>
+          </div>
+        </div>
+
+        <div class="cta">
+          예약 신청하기 · 신청금 0원
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============ SCREEN 3: STUDENT MY RESERVATIONS ============ -->
+  <div>
+    <div class="screen-label">
+      <div class="screen-num">3</div>
+      <div class="screen-name">내 예약 · 학생</div>
+      <div class="screen-desc">상태 한눈에 보기</div>
+    </div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 18h3v2H2zM7 14h3v6H7zM12 10h3v10h-3zM17 5h3v15h-3z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="18" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="1.5"/><rect x="20" y="10" width="2" height="4" fill="currentColor"/></svg>
+        </div>
+      </div>
+      <div class="phone-body">
+
+        <div class="topbar">
+          <h2 style="margin:0; font-size:22px; font-weight:800; letter-spacing:-0.01em;">내 예약</h2>
+          <div class="icon-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          </div>
+        </div>
+
+        <div class="seg">
+          <div class="seg-tab active">진행중 · 2</div>
+          <div class="seg-tab">완료 · 7</div>
+          <div class="seg-tab">취소</div>
+        </div>
+
+        <div class="res-card">
+          <div class="res-top">
+            <div>
+              <div style="font-size:11px; color:var(--ink-3); font-weight:500;">5월 24일 (금) · 19:00</div>
+              <div style="font-size:15px; font-weight:700; margin-top:3px;">이자카야 모리</div>
+            </div>
+            <span class="status-pill pill-confirm">● 확정</span>
+          </div>
+          <div class="res-meta">
+            <span>인원 <b>18명</b></span>
+            <span>· 예산 <b>25,000원</b></span>
+            <span>· 보증금 <b>없음</b></span>
+          </div>
+          <div class="res-actions">
+            <div class="btn-ghost">상세보기</div>
+            <div class="btn-dark">위치 안내</div>
+          </div>
+        </div>
+
+        <div class="res-card">
+          <div class="res-top">
+            <div>
+              <div style="font-size:11px; color:var(--ink-3); font-weight:500;">5월 27일 (월) · 18:30</div>
+              <div style="font-size:15px; font-weight:700; margin-top:3px;">구이구이 정육식당</div>
+            </div>
+            <span class="status-pill pill-wait">● 점주 응답 대기</span>
+          </div>
+          <div class="res-meta">
+            <span>인원 <b>24명</b></span>
+            <span>· 예산 <b>20,000원</b></span>
+            <span>· 응답까지 <b>2시간</b></span>
+          </div>
+          <div class="res-actions">
+            <div class="btn-ghost">예약 수정</div>
+            <div class="btn-ghost" style="color:var(--danger);">신청 취소</div>
+          </div>
+        </div>
+
+        <div class="sect-title" style="margin-bottom:6px;">
+          <h3 style="font-size:14px;">지난 예약</h3>
+          <a>모두 보기</a>
+        </div>
+
+        <div class="place" style="border-bottom: 1px solid var(--line-2);">
+          <div class="place-img pi5"></div>
+          <div class="place-info">
+            <div class="place-name">
+              <span>파티룸 더루프</span>
+              <span style="font-size:10px; color:var(--ink-3);">5월 12일</span>
+            </div>
+            <div class="place-cat">파티룸 · 22명 · 완료</div>
+            <div class="place-meta">
+              <span>★ <b>리뷰 작성하기</b></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="place" style="border-bottom: 0;">
+          <div class="place-img pi4"></div>
+          <div class="place-info">
+            <div class="place-name">
+              <span>코인노래 라라</span>
+              <span style="font-size:10px; color:var(--ink-3);">5월 5일</span>
+            </div>
+            <div class="place-cat">노래방 · 12명 · 완료</div>
+            <div class="place-meta">
+              <span>리뷰 ★★★★☆</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabbar">
+          <div class="tab">
+            <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1V11z"/></svg>
+            홈
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            검색
+          </div>
+          <div class="tab active">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+            내 예약
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+            마이
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============ SCREEN 4: OWNER DASHBOARD ============ -->
+  <div>
+    <div class="screen-label">
+      <div class="screen-num">4</div>
+      <div class="screen-name">점주 대시보드</div>
+      <div class="screen-desc">요청 관리 · KPI</div>
+    </div>
+    <div class="phone">
+      <div class="status-bar">
+        <span>9:41</span>
+        <div class="status-icons">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 18h3v2H2zM7 14h3v6H7zM12 10h3v10h-3zM17 5h3v15h-3z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9z"/></svg>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="7" width="18" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="1.5"/><rect x="20" y="10" width="2" height="4" fill="currentColor"/></svg>
+        </div>
+      </div>
+      <div class="phone-body">
+
+        <div class="topbar">
+          <div>
+            <div style="font-size:11px; color:var(--ink-3); font-weight:500;">이자카야 모리 · 사장님</div>
+            <div class="owner-hi">안녕하세요, <span style="background:var(--accent); padding:0 4px;">민준</span>님</div>
+          </div>
+          <div class="icon-btn" style="position:relative;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.4-1.4A7 7 0 005 11v3.3L3.6 17H8m2 0a3 3 0 006 0"/></svg>
+            <span style="position:absolute; top:6px; right:6px; width:8px; height:8px; background:var(--danger); border-radius:50%; border:2px solid #fff;"></span>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi dark">
+            <div class="kpi-lab">이번 주 단체 예약 매출</div>
+            <div class="kpi-val">₩ 4,820,000</div>
+            <div class="kpi-delta">▲ 32%  지난주 대비</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lab">대기 요청</div>
+            <div class="kpi-val">3건</div>
+            <div class="kpi-delta" style="color:var(--warn);">● 응답 필요</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-lab">이번주 확정</div>
+            <div class="kpi-val">12건</div>
+            <div class="kpi-delta">+5건</div>
+          </div>
+        </div>
+
+        <div class="sect-title">
+          <h3>신규 예약 요청</h3>
+          <a>전체 3건</a>
+        </div>
+
+        <div class="req-card">
+          <div class="req-head">
+            <div class="avatar">김</div>
+            <div style="flex:1;">
+              <div class="req-name">김지원 · 연세대학교</div>
+              <div class="req-tag">경영학과 · 인증 학생</div>
+            </div>
+            <span class="status-pill pill-wait">2시간 남음</span>
+          </div>
+          <div class="req-info">
+            <div><span>날짜</span><b>5/27 (월)</b></div>
+            <div><span>시간</span><b>18:30</b></div>
+            <div><span>인원</span><b>24명</b></div>
+          </div>
+          <div class="req-msg">"학과 종강 회식이에요! 22시까지 가능하면 좋겠어요. 단체 메뉴 추천해주세요 🙏"</div>
+          <div class="res-actions">
+            <div class="btn-ghost">거절</div>
+            <div class="btn-dark" style="background:var(--accent); color:var(--ink);">수락하기</div>
+          </div>
+        </div>
+
+        <div class="req-card">
+          <div class="req-head">
+            <div class="avatar a2">박</div>
+            <div style="flex:1;">
+              <div class="req-name">박서연 · 서강대학교</div>
+              <div class="req-tag">광고홍보학과 · 동아리</div>
+            </div>
+            <span class="status-pill pill-wait">5시간 남음</span>
+          </div>
+          <div class="req-info">
+            <div><span>날짜</span><b>5/30 (목)</b></div>
+            <div><span>시간</span><b>19:00</b></div>
+            <div><span>인원</span><b>16명</b></div>
+          </div>
+          <div class="res-actions">
+            <div class="btn-ghost">거절</div>
+            <div class="btn-dark">수락하기</div>
+          </div>
+        </div>
+
+        <div class="tabbar">
+          <div class="tab active">
+            <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1V11z"/></svg>
+            대시보드
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+            예약
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+            매출
+          </div>
+          <div class="tab">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.8.3l-.1.1A2 2 0 113.4 17l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H2a2 2 0 110-4h.1A1.7 1.7 0 003.6 9 1.7 1.7 0 003.3 7.2L3.2 7.1A2 2 0 116 4.3l.1.1A1.7 1.7 0 008 4.7 1.7 1.7 0 009 3.1V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1A2 2 0 1120.7 7l-.1.1a1.7 1.7 0 00-.3 1.8 1.7 1.7 0 001.5 1H22a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+            설정
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<footer class="doc-foot">
+  <b>모이다</b> · 단체 예약 매칭 컨셉 · 모바일 시안 4종 · 한 페이지에서 흐름을 확인할 수 있도록 가로로 배치했어요. 실 사용 시에는 각 화면이 풀스크린으로 전환됩니다.
+</footer>
+
+</body>
+</html>

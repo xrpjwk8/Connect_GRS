@@ -1,0 +1,176 @@
+import SwiftUI
+
+// _2, _8 — 예약자 회원가입
+struct BookerSignUpView: View {
+    @Environment(AppState.self) private var appState
+
+    @State private var schoolName: String = ""
+    @State private var departmentName: String = ""
+    @State private var position: String = ""
+    @State private var realName: String = ""
+    @State private var schoolEmail: String = ""
+    @State private var verificationCode: String = ""
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // 상단바
+            HStack {
+                Button {
+                    appState.logout()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(AppColors.ink)
+                }
+                Spacer()
+                Text("회원가입")
+                    .font(.titleMD())
+                    .foregroundStyle(AppColors.ink)
+                Spacer()
+                Spacer().frame(width: 18)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+
+            // 진행 바
+            Rectangle()
+                .fill(AppColors.primary)
+                .frame(height: 3)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // 1) 기본 정보
+                    Group {
+                        Text("기본 정보")
+                            .font(.headlineMD())
+                            .foregroundStyle(AppColors.ink)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            FormLabel(title: "학교명")
+                            Menu {
+                                ForEach(MockData.universities, id: \.self) { uni in
+                                    Button(uni) { schoolName = uni }
+                                }
+                            } label: {
+                                HStack {
+                                    Text(schoolName.isEmpty ? "학교를 선택해주세요" : schoolName)
+                                        .foregroundStyle(schoolName.isEmpty ? AppColors.neutral : AppColors.ink)
+                                    Spacer()
+                                    Image(systemName: "chevron.down")
+                                        .foregroundStyle(AppColors.inkSecondary)
+                                }
+                                .padding(14)
+                                .background(AppColors.chipBG)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            FormLabel(title: "학과 / 단체명")
+                            AppTextField(placeholder: "예: 경영학과 / 댄스동아리", text: $departmentName)
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            FormLabel(title: "직책")
+                            AppTextField(placeholder: "예: 회장, 과대표", text: $position)
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            FormLabel(title: "이름")
+                            AppTextField(placeholder: "실명을 입력해주세요", text: $realName)
+                        }
+                    }
+
+                    Divider().padding(.vertical, 6)
+
+                    // 2) 신원 인증
+                    Group {
+                        Text("신원 인증")
+                            .font(.headlineMD())
+                            .foregroundStyle(AppColors.ink)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            FormLabel(title: "학교 메일")
+                            HStack(spacing: 10) {
+                                AppTextField(placeholder: "example@university.ac.kr", text: $schoolEmail)
+                                Button {
+                                    // 인증번호 발송 mock
+                                } label: {
+                                    Text("인증번호 발송")
+                                        .font(.bodyLG())
+                                        .foregroundStyle(AppColors.inkSecondary)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 14)
+                                        .background(AppColors.surfaceContainerHigh)
+                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            FormLabel(title: "인증번호")
+                            HStack(spacing: 10) {
+                                AppTextField(placeholder: "6자리 숫자 입력", text: $verificationCode)
+                                Button {
+                                    // 확인 mock
+                                } label: {
+                                    Text("확인")
+                                        .font(.bodyLG())
+                                        .foregroundStyle(AppColors.white)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 14)
+                                        .background(AppColors.ink)
+                                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    Divider().padding(.vertical, 6)
+
+                    // 3) 학생증 인증 — 누르면 사진 보관함 열림
+                    Group {
+                        Text("학생증 인증")
+                            .font(.headlineMD())
+                            .foregroundStyle(AppColors.ink)
+                        InteractiveUploader(
+                            icon: "person.text.rectangle",
+                            title: "학생증 또는 에브리타임 캡처본 업로드",
+                            subtitle: "JPG, PNG (최대 10MB)"
+                        )
+                    }
+
+                    InfoBanner(
+                        title: "신원 인증 안내",
+                        message: "안전한 서비스 이용을 위해 신원 인증이 필요합니다. 수집된 정보는 노쇼 방지 및 신뢰할 수 있는 매칭을 위한 목적으로만 사용되며 안전하게 파기됩니다."
+                    )
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 20)
+            }
+
+            Button {
+                // 가입 정보 AppState에 저장 (마이페이지/홈 등에서 사용)
+                appState.schoolName = schoolName
+                appState.departmentName = departmentName
+                appState.position = position
+                appState.realName = realName
+                appState.schoolEmail = schoolEmail
+                appState.finishBookerSignUp()
+            } label: {
+                Text("가입 완료하기")
+            }
+            .buttonStyle(PrimaryFilledButtonStyle())
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+        }
+        .background(AppColors.surface.ignoresSafeArea())
+    }
+}
+
+#Preview {
+    BookerSignUpView()
+        .environment(AppState())
+}
