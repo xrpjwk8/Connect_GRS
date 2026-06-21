@@ -29,20 +29,20 @@ struct OwnerSignUpView: View {
             .padding(.vertical, 14)
 
             // 진행 바 2/2
-            HStack(spacing: 6) {
-                Rectangle().fill(AppColors.primary).frame(height: 6)
-                Rectangle().fill(AppColors.primaryDim).frame(height: 6)
-                Rectangle().fill(AppColors.surfaceContainerHigh).frame(height: 6)
-                    .frame(maxWidth: 60)
-                Text("2/2")
-                    .font(.labelMD())
-                    .foregroundStyle(AppColors.inkSecondary)
-            }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 16)
+//            HStack(spacing: 6) {
+//                Rectangle().fill(AppColors.primary).frame(height: 6)
+//                Rectangle().fill(AppColors.primaryDim).frame(height: 6)
+//                Rectangle().fill(AppColors.surfaceContainerHigh).frame(height: 6)
+//                    .frame(maxWidth: 60)
+//                Text("2/2")
+//                    .font(.labelMD())
+//                    .foregroundStyle(AppColors.inkSecondary)
+//            }
+//            .padding(.horizontal, 18)
+//            .padding(.bottom, 16)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 24) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("비즈니스 인증")
                             .font(.headlineLG())
@@ -51,6 +51,7 @@ struct OwnerSignUpView: View {
                             .font(.bodyLG())
                             .foregroundStyle(AppColors.inkSecondary)
                     }
+                    .padding(.top, 10)
 
                     VStack(alignment: .leading, spacing: 8) {
                         FormLabel(title: "가게명")
@@ -69,7 +70,7 @@ struct OwnerSignUpView: View {
                             .keyboardType(.numberPad)
                         // 값이 바뀔 때마다 숫자만 남기도록 필터링
                             .onChange(of: contact) { newValue in
-                                let filtered = newValue.filter { $0.isNumber}
+                                let filtered = newValue.filter { $0.isNumber }
                                 if filtered != newValue {
                                     contact = filtered
                                 }
@@ -79,11 +80,15 @@ struct OwnerSignUpView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         FormLabel(title: "사업자 등록 번호")
                         AppTextField(placeholder: "사업자 등록 번호 10자리를 입력해주세요", text: $businessNumber)
+                            .keyboardType(.numberPad)
                             .onChange(of: businessNumber) { newValue in
-                                        if newValue.count > 10 {
+                                let filtered = newValue.filter { $0.isNumber } // 숫자만 필터링, 이후 10자 제한 적용
+                                if filtered.count > 10 {
                                             businessNumber = String(newValue.prefix(10))
-                                        }
-                                    }
+                                } else {
+                                    businessNumber = filtered
+                                }
+                            }
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
