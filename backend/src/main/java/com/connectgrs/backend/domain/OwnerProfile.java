@@ -7,6 +7,7 @@ public record OwnerProfile(
         String storeName,
         String ownerName,
         String contact,
-        String businessNumber
+        String businessNumber,
+        UUID storeId
 ) {
 }

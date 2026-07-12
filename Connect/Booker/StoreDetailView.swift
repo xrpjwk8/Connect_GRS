@@ -19,6 +19,7 @@ struct StoreDetailView: View {
     @State private var showSubmittedAlert: Bool = false
     @State private var showValidationAlert: Bool = false
     @State private var validationMessage: String = ""
+    @State private var isSubmitting: Bool = false
 
     init(store: Store) {
         self.store = store
@@ -128,7 +129,7 @@ struct StoreDetailView: View {
                             .clipShape(Circle())
                     }
                     Button {
-                        isFavorite.toggle()
+                        toggleFavorite()
                     } label: {
                         Image(systemName: isFavorite ? "heart.fill" : "heart")
                             .foregroundStyle(isFavorite ? AppColors.danger : .white)
@@ -488,21 +489,42 @@ struct StoreDetailView: View {
     // MARK: - 하단 CTA
     private var bottomCTA: some View {
         VStack {
-            Button { submit() } label: {
+            Button {
+                Task { await submit() }
+            } label: {
                 HStack {
-                    Text("예약 신청하기")
-                    Image(systemName: "arrow.right")
+                    Text(isSubmitting ? "신청 중..." : "예약 신청하기")
+                    if !isSubmitting { Image(systemName: "arrow.right") }
                 }
             }
             .buttonStyle(LimeButtonStyle())
+            .disabled(isSubmitting)
             .padding(.horizontal, 18)
             .padding(.vertical, 12)
         }
         .background(.thinMaterial)
     }
 
+    // MARK: - 찜하기
+    private func toggleFavorite() {
+        let newValue = !isFavorite
+        isFavorite = newValue
+        Task {
+            do {
+                if newValue {
+                    try await ConnectAPI.addFavorite(bookerId: appState.bookerId, storeId: store.id)
+                } else {
+                    try await ConnectAPI.removeFavorite(bookerId: appState.bookerId, storeId: store.id)
+                }
+            } catch {
+                // 실패 시 되돌리기
+                isFavorite = !newValue
+            }
+        }
+    }
+
     // MARK: - 예약 신청
-    private func submit() {
+    private func submit() async {
         if selectedDateKey.isEmpty {
             validationMessage = "예약 날짜를 선택해주세요."
             showValidationAlert = true
@@ -519,9 +541,9 @@ struct StoreDetailView: View {
             showValidationAlert = true
             return
         }
-        guard let dateOpt = dateOptions.first(where: { $0.key == selectedDateKey }) else { return }
+        guard dateOptions.first(where: { $0.key == selectedDateKey }) != nil else { return }
 
-        // 정렬된 시간 목록
+        // 정렬된 시간 목록 ("HH:mm" -> 백엔드용 "HH:mm:ss")
         let sortedTimes = selectedTimes
             .compactMap { t -> (Int, String)? in
                 guard let i = allTimes.firstIndex(of: t) else { return nil }
@@ -529,11 +551,8 @@ struct StoreDetailView: View {
             }
             .sorted(by: { $0.0 < $1.0 })
             .map { $0.1 }
-        let timeLabel: String = {
-            if sortedTimes.count == 1 { return sortedTimes[0] }
-            return "\(sortedTimes.first!) ~ \(sortedTimes.last!)"
-        }()
-        let dateLabel = "\(dateOpt.label) (\(dateOpt.day)) \(timeLabel)"
+        // "24:00" 표기는 자정을 뜻하므로 백엔드가 이해하는 "00:00:00"으로 변환
+        let backendTimeSlots = sortedTimes.map { $0 == "24:00" ? "00:00:00" : "\($0):00" }
 
         // 편집용 dateValue 계산
         let cal = Calendar.current
@@ -544,23 +563,28 @@ struct StoreDetailView: View {
             }
             return 0
         }()
-        let dateValue = cal.date(byAdding: .day, value: offset, to: anchor)
+        guard let dateValue = cal.date(byAdding: .day, value: offset, to: anchor) else { return }
 
-        let newReservation = MyReservation(
-            id: UUID(),
-            storeName: store.name,
-            imageSymbol: store.imageName,
-            status: .pending,
-            dateLabel: dateLabel,
-            people: peopleNum,
-            budget: Int(budget),
-            dateValue: dateValue,
-            timeLabels: sortedTimes,
-            eventPurpose: eventPurpose,
-            requestMessage: requestMessage
-        )
-        appState.myReservations.insert(newReservation, at: 0)
-        showSubmittedAlert = true
+        isSubmitting = true
+        defer { isSubmitting = false }
+        do {
+            let body = ReservationCreateRequestBody(
+                storeId: store.id,
+                bookerId: appState.bookerId,
+                date: APIDateFormat.date.string(from: dateValue),
+                timeSlots: backendTimeSlots,
+                people: peopleNum,
+                budgetPerPerson: Int(budget),
+                eventPurpose: eventPurpose,
+                requestMessage: requestMessage.isEmpty ? nil : requestMessage
+            )
+            let created = try await ConnectAPI.createReservation(body)
+            appState.myReservations.insert(created.toMyReservation(), at: 0)
+            showSubmittedAlert = true
+        } catch {
+            validationMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
+            showValidationAlert = true
+        }
     }
 
     // MARK: - KPI 칸

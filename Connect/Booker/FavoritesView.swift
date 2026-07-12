@@ -2,6 +2,10 @@ import SwiftUI
 
 // _23 — 찜한 가게
 struct FavoritesView: View {
+    @Environment(AppState.self) private var appState
+    @State private var favorites: [Store] = []
+    @State private var isLoading = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
@@ -14,7 +18,16 @@ struct FavoritesView: View {
                 }
                 .padding(.vertical, 6)
 
-                ForEach(MockData.favorites) { store in
+                if isLoading {
+                    ProgressView().frame(maxWidth: .infinity).padding(.top, 30)
+                } else if favorites.isEmpty {
+                    Text("아직 찜한 가게가 없어요")
+                        .font(.bodyMD())
+                        .foregroundStyle(AppColors.inkSecondary)
+                        .padding(.top, 20)
+                }
+
+                ForEach(favorites) { store in
                     favoriteCard(store)
                 }
 
@@ -38,6 +51,7 @@ struct FavoritesView: View {
         .background(AppColors.surface.ignoresSafeArea())
         .navigationTitle("찜한 가게")
         .navigationBarTitleDisplayMode(.inline)
+        .task { await loadFavorites() }
     }
 
     private func favoriteCard(_ store: Store) -> some View {
@@ -52,12 +66,17 @@ struct FavoritesView: View {
                             .font(.system(size: 36))
                             .foregroundStyle(.white.opacity(0.55))
                     )
-                Image(systemName: "heart.fill")
-                    .foregroundStyle(AppColors.primary)
-                    .padding(10)
-                    .background(.black.opacity(0.35))
-                    .clipShape(Circle())
-                    .padding(10)
+                Button {
+                    Task { await removeFavorite(store) }
+                } label: {
+                    Image(systemName: "heart.fill")
+                        .foregroundStyle(AppColors.primary)
+                        .padding(10)
+                        .background(.black.opacity(0.35))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .padding(10)
             }
 
             HStack {
@@ -75,7 +94,9 @@ struct FavoritesView: View {
                     .font(.bodyMD())
                     .foregroundStyle(AppColors.inkSecondary)
                 Spacer()
-                Button { } label: {
+                NavigationLink {
+                    StoreDetailView(store: store)
+                } label: {
                     Text("예약하기")
                         .font(.bodyLG())
                         .foregroundStyle(AppColors.ink)
@@ -88,6 +109,20 @@ struct FavoritesView: View {
             }
         }
         .appCard()
+    }
+
+    // MARK: - 백엔드 연동
+    private func loadFavorites() async {
+        isLoading = true
+        defer { isLoading = false }
+        if let dtos = try? await ConnectAPI.favorites(bookerId: appState.bookerId) {
+            favorites = dtos.map { $0.toStore() }
+        }
+    }
+
+    private func removeFavorite(_ store: Store) async {
+        try? await ConnectAPI.removeFavorite(bookerId: appState.bookerId, storeId: store.id)
+        await loadFavorites()
     }
 }
 

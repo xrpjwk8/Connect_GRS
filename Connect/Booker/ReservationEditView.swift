@@ -16,6 +16,7 @@ struct ReservationEditView: View {
     @State private var showSavedAlert: Bool = false
     @State private var showValidationAlert: Bool = false
     @State private var validationMessage: String = ""
+    @State private var isSaving: Bool = false
 
     // 시간 관련 (StoreDetailView와 동일 규칙)
     private let timeRows: [[String]] = [
@@ -368,10 +369,11 @@ struct ReservationEditView: View {
             }
             .buttonStyle(GhostButtonStyle())
 
-            Button { saveChanges() } label: {
-                Text("변경 저장")
+            Button { Task { await saveChanges() } } label: {
+                Text(isSaving ? "저장 중..." : "변경 저장")
             }
             .buttonStyle(LimeButtonStyle())
+            .disabled(isSaving)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
@@ -389,7 +391,7 @@ struct ReservationEditView: View {
         requestMessage = r.requestMessage
     }
 
-    private func saveChanges() {
+    private func saveChanges() async {
         let peopleNum = Int(peopleText) ?? 0
         if peopleNum < 1 {
             validationMessage = "인원을 1명 이상 입력해주세요."
@@ -401,38 +403,34 @@ struct ReservationEditView: View {
             showValidationAlert = true
             return
         }
-        guard let idx = appState.myReservations.firstIndex(where: { $0.id == reservationId }) else {
+        guard appState.myReservations.firstIndex(where: { $0.id == reservationId }) != nil else {
             dismiss(); return
         }
 
-        // 시간 라벨 만들기
         let sorted = sortedSelectedTimes()
-        let timeLabel: String = {
-            if sorted.count == 1 { return sorted[0] }
-            return "\(sorted.first!) ~ \(sorted.last!)"
-        }()
+        // "24:00" 표기는 자정을 뜻하므로 백엔드가 이해하는 "00:00:00"으로 변환
+        let backendTimeSlots = sorted.map { $0 == "24:00" ? "00:00:00" : "\($0):00" }
 
-        // 날짜 라벨 만들기 (M/d (요일))
-        let dateFmt = DateFormatter()
-        dateFmt.locale = Locale(identifier: "ko_KR")
-        dateFmt.dateFormat = "M/d"
-        let weekdayFmt = DateFormatter()
-        weekdayFmt.locale = Locale(identifier: "ko_KR")
-        weekdayFmt.dateFormat = "EEEEE"
-        let dateLabel = "\(dateFmt.string(from: date)) (\(weekdayFmt.string(from: date))) \(timeLabel)"
-
-        // 업데이트
-        var updated = appState.myReservations[idx]
-        updated.dateLabel = dateLabel
-        updated.people = peopleNum
-        updated.budget = Int(budgetText)
-        updated.dateValue = date
-        updated.timeLabels = sorted
-        updated.eventPurpose = eventPurpose
-        updated.requestMessage = requestMessage
-        appState.myReservations[idx] = updated
-
-        showSavedAlert = true
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            let body = ReservationUpdateRequestBody(
+                date: APIDateFormat.date.string(from: date),
+                timeSlots: backendTimeSlots,
+                people: peopleNum,
+                budgetPerPerson: Int(budgetText),
+                eventPurpose: eventPurpose,
+                requestMessage: requestMessage
+            )
+            let updated = try await ConnectAPI.updateReservation(reservationId: reservationId, body)
+            if let idx = appState.myReservations.firstIndex(where: { $0.id == reservationId }) {
+                appState.myReservations[idx] = updated.toMyReservation()
+            }
+            showSavedAlert = true
+        } catch {
+            validationMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
+            showValidationAlert = true
+        }
     }
 }
 

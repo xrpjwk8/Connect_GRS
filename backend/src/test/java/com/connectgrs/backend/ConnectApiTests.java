@@ -50,6 +50,17 @@ class ConnectApiTests {
     }
 
     @Test
+    void returnsAvailabilitySlotsWithoutHanging() throws Exception {
+        mockMvc.perform(get("/api/owners/11111111-1111-1111-1111-111111111111/availability")
+                        .param("storeId", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+                        .param("date", "2030-07-16"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slots.length()").value(16))
+                .andExpect(jsonPath("$.slots[0].time").value("16:00:00"))
+                .andExpect(jsonPath("$.slots[15].time").value("23:30:00"));
+    }
+
+    @Test
     void updatesReservation() throws Exception {
         mockMvc.perform(patch("/api/reservations/dddddddd-dddd-dddd-dddd-dddddddddddd")
                         .contentType(MediaType.APPLICATION_JSON)

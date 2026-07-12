@@ -2,7 +2,11 @@ import SwiftUI
 
 // _5 — 점주 홈/대시보드
 struct OwnerDashboardView: View {
-    @State private var requests: [ReservationRequest] = MockData.pendingRequests
+    @Environment(AppState.self) private var appState
+    @State private var requests: [ReservationRequest] = []
+    @State private var storeName: String = "캠퍼스 포차"
+    @State private var weeklyRevenueManWon: Int = 0
+    @State private var isLoading = false
 
     var body: some View {
         NavigationStack {
@@ -24,7 +28,7 @@ struct OwnerDashboardView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "storefront")
                             .foregroundStyle(AppColors.inkSecondary)
-                        Text("[홍대] 캠퍼스 포차")
+                        Text(storeName)
                             .font(.bodyLG())
                             .foregroundStyle(AppColors.inkSecondary)
                     }
@@ -46,19 +50,13 @@ struct OwnerDashboardView: View {
                                     .foregroundStyle(AppColors.inkSecondary)
                             }
                             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                Text("482")
+                                Text("\(weeklyRevenueManWon)")
                                     .font(.system(size: 36, weight: .heavy))
                                     .foregroundStyle(AppColors.ink)
                                 Text("만원")
                                     .font(.titleMD())
                                     .foregroundStyle(AppColors.ink)
                             }
-                            HStack(spacing: 4) {
-                                Image(systemName: "arrow.up.right")
-                                Text("+15% vs 지난주")
-                            }
-                            .font(.labelMD())
-                            .foregroundStyle(AppColors.primaryDeep)
                         }
                         .padding(16)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -117,6 +115,10 @@ struct OwnerDashboardView: View {
                         Spacer()
                     }
 
+                    if isLoading {
+                        ProgressView().frame(maxWidth: .infinity).padding(.top, 20)
+                    }
+
                     VStack(spacing: 12) {
                         ForEach(requests) { req in
                             requestCard(req)
@@ -127,7 +129,30 @@ struct OwnerDashboardView: View {
                 .padding(.vertical, 8)
             }
             .background(AppColors.surface.ignoresSafeArea())
+            .task { await loadDashboard() }
+            .refreshable { await loadDashboard() }
         }
+    }
+
+    // MARK: - 백엔드 연동
+    private func loadDashboard() async {
+        isLoading = true
+        defer { isLoading = false }
+        if let dto = try? await ConnectAPI.ownerDashboard(ownerId: appState.ownerId) {
+            storeName = dto.storeName
+            weeklyRevenueManWon = dto.weeklyRevenueManWon
+            requests = dto.pendingRequests.map { $0.toReservationRequest() }
+        }
+    }
+
+    private func approve(_ reqId: UUID) async {
+        _ = try? await ConnectAPI.approveReservation(ownerId: appState.ownerId, reservationId: reqId)
+        await loadDashboard()
+    }
+
+    private func reject(_ reqId: UUID) async {
+        _ = try? await ConnectAPI.rejectReservation(ownerId: appState.ownerId, reservationId: reqId)
+        await loadDashboard()
     }
 
     @ViewBuilder
@@ -175,13 +200,13 @@ struct OwnerDashboardView: View {
 
             HStack(spacing: 10) {
                 Button {
-                    requests.removeAll { $0.id == req.id }
+                    Task { await reject(req.id) }
                 } label: {
                     Text("거절")
                 }
                 .buttonStyle(GhostButtonStyle())
                 Button {
-                    requests.removeAll { $0.id == req.id }
+                    Task { await approve(req.id) }
                 } label: {
                     Text("수락")
                         .foregroundStyle(.white)
@@ -210,4 +235,5 @@ struct OwnerDashboardView: View {
 
 #Preview {
     OwnerDashboardView()
+        .environment(AppState())
 }

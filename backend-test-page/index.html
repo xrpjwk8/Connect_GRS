@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>Connect GRS Backend Test Page</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; line-height: 1.5; }
+  h1 { font-size: 20px; }
+  h2 { font-size: 16px; margin-top: 32px; border-bottom: 1px solid #8884; padding-bottom: 4px; }
+  section { margin-bottom: 24px; }
+  label { display: inline-block; min-width: 90px; font-size: 13px; opacity: 0.8; }
+  input, select { padding: 4px 6px; margin: 3px; font-size: 13px; }
+  button { padding: 5px 12px; margin: 3px; cursor: pointer; font-size: 13px; }
+  pre { background: #8881; padding: 8px; border-radius: 6px; max-height: 260px; overflow: auto; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 6px; }
+  .card { border: 1px solid #8884; border-radius: 8px; padding: 10px; margin: 6px 0; }
+  .ok { color: #2a2; }
+  .err { color: #d33; }
+  .status { font-weight: bold; margin-left: 8px; }
+  .slot { display: inline-block; width: 60px; text-align: center; padding: 4px 0; margin: 2px; border-radius: 4px; font-size: 11px; cursor: pointer; user-select: none; }
+  .slot.available { background: #2a52; }
+  .slot.reserved { background: #d332; }
+  .slot.blocked { background: #8882; }
+  .slot.closed { background: #8881; opacity: 0.4; cursor: default; }
+  .slot.selected { outline: 2px solid #06c; }
+  #baseUrlBar { position: sticky; top: 0; background: Canvas; padding: 8px 0; z-index: 10; }
+</style>
+</head>
+<body>
+
+<div id="baseUrlBar" class="row">
+  <label>Backend URL</label>
+  <input id="baseUrl" value="http://localhost:8080" size="30" />
+  <button onclick="checkHealth()">연결 확인</button>
+  <span id="healthStatus" class="status"></span>
+</div>
+
+<h1>Connect GRS — Backend 연동 테스트 페이지</h1>
+<p style="opacity:0.7;font-size:13px">SwiftUI iOS 프론트는 이 환경(Xcode 미설치)에서 직접 실행할 수 없어, 같은 REST API를 두드리는 웹 테스트 페이지로 백엔드 연동을 검증합니다.</p>
+
+<section>
+  <h2>0. 필터 메타데이터</h2>
+  <button onclick="loadMeta()">GET /api/meta/filters</button>
+  <pre id="metaOut"></pre>
+</section>
+
+<section>
+  <h2>1. 예약자(Booker) 가입 / 선택</h2>
+  <div class="row">
+    <label>bookerId</label><input id="bookerId" value="33333333-3333-3333-3333-333333333333" size="38" />
+  </div>
+  <div class="card">
+    <div class="row"><label>학교</label><input id="su_school" value="연세대학교"></div>
+    <div class="row"><label>학과</label><input id="su_dept" value="경영학과"></div>
+    <div class="row"><label>직책</label><input id="su_position" value="회장"></div>
+    <div class="row"><label>이름</label><input id="su_name" value="테스트유저"></div>
+    <div class="row"><label>학교이메일</label><input id="su_email" value="test@yonsei.ac.kr"></div>
+    <div class="row"><label>전화번호</label><input id="su_phone" value="010-1234-5678"></div>
+    <button onclick="signUpBooker()">POST /api/auth/bookers (새 예약자 생성)</button>
+  </div>
+  <pre id="signupOut"></pre>
+</section>
+
+<section>
+  <h2>2. 매장 검색 / 추천</h2>
+  <div class="row">
+    <label>지역</label>
+    <select id="searchRegion"><option value="">전체</option><option>신촌</option><option>홍대</option><option>건대</option><option>이태원</option></select>
+    <label>카테고리</label>
+    <select id="searchCategory"><option value="">전체</option><option>주점</option><option>고깃집</option><option>파티룸</option><option>카페</option><option>일식</option></select>
+    <label>인원</label><input id="searchPeople" type="number" size="4" placeholder="예: 20">
+  </div>
+  <button onclick="loadFeatured()">GET /api/stores/featured</button>
+  <button onclick="loadSearch()">GET /api/stores (검색)</button>
+  <div id="storeList"></div>
+</section>
+
+<section>
+  <h2>3. 예약 생성</h2>
+  <div class="row"><label>storeId</label><input id="rv_storeId" value="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" size="38"></div>
+  <div class="row"><label>날짜</label><input id="rv_date" type="date" value="2030-07-16"></div>
+  <div class="row"><label>시간(콤마)</label><input id="rv_times" value="19:00:00,19:30:00" size="20"></div>
+  <div class="row"><label>인원</label><input id="rv_people" type="number" value="20"></div>
+  <div class="row"><label>예산/인</label><input id="rv_budget" type="number" value="20000"></div>
+  <div class="row"><label>목적</label><input id="rv_purpose" value="종강파티"></div>
+  <div class="row"><label>요청사항</label><input id="rv_msg" value="창가석 부탁드려요" size="30"></div>
+  <button onclick="createReservation()">POST /api/reservations</button>
+  <pre id="reservationOut"></pre>
+</section>
+
+<section>
+  <h2>4. 내 예약 목록</h2>
+  <button onclick="loadMyReservations()">GET /api/bookers/{bookerId}/reservations</button>
+  <div id="myReservations"></div>
+</section>
+
+<section>
+  <h2>5. 점주(Owner) 대시보드</h2>
+  <div class="row"><label>ownerId</label><input id="ownerId" value="11111111-1111-1111-1111-111111111111" size="38"></div>
+  <button onclick="loadDashboard()">GET /api/owners/{ownerId}/dashboard</button>
+  <pre id="dashboardOut"></pre>
+</section>
+
+<section>
+  <h2>6. 예약 가능 시간표 (버그 수정 검증: halfHourSlots 무한루프)</h2>
+  <div class="row">
+    <label>storeId</label><input id="av_storeId" value="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" size="38">
+    <label>날짜</label><input id="av_date" type="date" value="2030-07-16">
+  </div>
+  <button onclick="loadAvailability()">GET /api/owners/{ownerId}/availability</button>
+  <span id="avStatus" class="status"></span>
+  <div id="availabilityGrid"></div>
+</section>
+
+<script>
+function base() { return document.getElementById('baseUrl').value.replace(/\/$/, ''); }
+
+async function api(method, path, body) {
+  const res = await fetch(base() + path, {
+    method,
+    headers: body ? {'Content-Type': 'application/json'} : {},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = text; }
+  return { ok: res.ok, status: res.status, data };
+}
+
+async function checkHealth() {
+  const el = document.getElementById('healthStatus');
+  el.textContent = '확인 중...'; el.className = 'status';
+  const t0 = performance.now();
+  try {
+    const r = await api('GET', '/api/meta/filters');
+    const ms = Math.round(performance.now() - t0);
+    el.textContent = r.ok ? `연결됨 (${ms}ms)` : `실패 HTTP ${r.status}`;
+    el.className = 'status ' + (r.ok ? 'ok' : 'err');
+  } catch (e) {
+    el.textContent = '연결 실패: ' + e.message;
+    el.className = 'status err';
+  }
+}
+
+async function loadMeta() {
+  const r = await api('GET', '/api/meta/filters');
+  document.getElementById('metaOut').textContent = JSON.stringify(r.data, null, 2);
+}
+
+async function signUpBooker() {
+  const body = {
+    schoolName: val('su_school'), departmentName: val('su_dept'), position: val('su_position'),
+    realName: val('su_name'), schoolEmail: val('su_email'), phoneNumber: val('su_phone')
+  };
+  const r = await api('POST', '/api/auth/bookers', body);
+  document.getElementById('signupOut').textContent = JSON.stringify(r.data, null, 2);
+  if (r.ok && r.data.id) document.getElementById('bookerId').value = r.data.id;
+}
+
+function val(id) { return document.getElementById(id).value; }
+
+function storeCard(store) {
+  return `<div class="card">
+    <b>${store.name}</b> (${store.category}, ${store.region}) — ★${store.rating} · 리뷰 ${store.reviewCount} · 최대 ${store.maxCapacity}명 · ${store.pricePerPerson.toLocaleString()}원/인
+    ${store.favorite ? ' <span class="ok">♥ 찜함</span>' : ''}
+    <div class="row">
+      <button onclick="useStore('${store.id}')">이 매장으로 예약 폼 채우기</button>
+      <button onclick="toggleFavorite('${store.id}', ${store.favorite})">${store.favorite ? '찜 해제' : '찜 추가'}</button>
+    </div>
+  </div>`;
+}
+
+function useStore(id) {
+  document.getElementById('rv_storeId').value = id;
+  document.getElementById('av_storeId').value = id;
+}
+
+async function toggleFavorite(storeId, isFavorite) {
+  const bookerId = val('bookerId');
+  await api(isFavorite ? 'DELETE' : 'POST', `/api/bookers/${bookerId}/favorites/${storeId}`);
+  loadSearch();
+  loadFeatured();
+}
+
+async function loadFeatured() {
+  const bookerId = val('bookerId');
+  const region = val('searchRegion');
+  const r = await api('GET', `/api/stores/featured?bookerId=${encodeURIComponent(bookerId)}&region=${encodeURIComponent(region)}`);
+  renderStores(r);
+}
+
+async function loadSearch() {
+  const bookerId = val('bookerId');
+  const region = val('searchRegion');
+  const category = val('searchCategory');
+  const people = val('searchPeople');
+  const params = new URLSearchParams({ bookerId, region, category });
+  if (people) params.set('people', people);
+  const r = await api('GET', `/api/stores?${params.toString()}`);
+  renderStores(r);
+}
+
+function renderStores(r) {
+  const el = document.getElementById('storeList');
+  if (!r.ok) { el.innerHTML = `<p class="err">HTTP ${r.status}: ${JSON.stringify(r.data)}</p>`; return; }
+  el.innerHTML = r.data.map(storeCard).join('') || '<p>결과 없음</p>';
+}
+
+async function createReservation() {
+  const body = {
+    storeId: val('rv_storeId'),
+    bookerId: val('bookerId'),
+    date: val('rv_date'),
+    timeSlots: val('rv_times').split(',').map(s => s.trim()).filter(Boolean),
+    people: Number(val('rv_people')),
+    budgetPerPerson: Number(val('rv_budget')) || null,
+    eventPurpose: val('rv_purpose'),
+    requestMessage: val('rv_msg')
+  };
+  const r = await api('POST', '/api/reservations', body);
+  document.getElementById('reservationOut').textContent = `HTTP ${r.status}\n` + JSON.stringify(r.data, null, 2);
+  if (r.ok) loadMyReservations();
+}
+
+async function loadMyReservations() {
+  const bookerId = val('bookerId');
+  const r = await api('GET', `/api/bookers/${bookerId}/reservations`);
+  const el = document.getElementById('myReservations');
+  if (!r.ok) { el.innerHTML = `<p class="err">HTTP ${r.status}</p>`; return; }
+  el.innerHTML = r.data.map(res => `<div class="card">
+    <b>${res.storeName}</b> — ${res.date} ${res.timeSlots.join(', ')} · ${res.people}명 · <b>${res.status}</b><br/>
+    ${res.eventPurpose} ${res.requestMessage ? '(' + res.requestMessage + ')' : ''}
+    <div class="row">
+      <button onclick="cancelReservation('${res.id}')">취소</button>
+    </div>
+  </div>`).join('') || '<p>예약 없음</p>';
+}
+
+async function cancelReservation(id) {
+  await api('POST', `/api/reservations/${id}/cancel`);
+  loadMyReservations();
+}
+
+async function loadDashboard() {
+  const ownerId = val('ownerId');
+  const r = await api('GET', `/api/owners/${ownerId}/dashboard`);
+  const out = document.getElementById('dashboardOut');
+  if (!r.ok) { out.textContent = `HTTP ${r.status}`; return; }
+  const d = r.data;
+  out.innerHTML = '';
+  out.textContent = `매장: ${d.storeName}\n이번주 매출: ${d.weeklyRevenueManWon}만원\n이번주 예약수: ${d.weeklyReservationCount}\n대기중 요청: ${d.pendingRequestCount}`;
+  const list = d.pendingRequests.map(res => `<div class="card">
+    ${res.date} ${res.timeSlots.join(', ')} · ${res.bookerName} · ${res.people}명
+    <div class="row">
+      <button onclick="approve('${res.id}')">승인</button>
+      <button onclick="reject('${res.id}')">거절</button>
+    </div>
+  </div>`).join('');
+  document.getElementById('dashboardOut').insertAdjacentHTML('afterend', `<div id="pendingList">${list}</div>`);
+  const old = document.getElementById('pendingListOld'); if (old) old.remove();
+}
+
+async function approve(id) {
+  const ownerId = val('ownerId');
+  await api('POST', `/api/owners/${ownerId}/reservations/${id}/approve`);
+  loadDashboard();
+}
+async function reject(id) {
+  const ownerId = val('ownerId');
+  await api('POST', `/api/owners/${ownerId}/reservations/${id}/reject`);
+  loadDashboard();
+}
+
+async function loadAvailability() {
+  const ownerId = val('ownerId');
+  const storeId = val('av_storeId');
+  const date = val('av_date');
+  const statusEl = document.getElementById('avStatus');
+  statusEl.textContent = '조회 중...'; statusEl.className = 'status';
+  const t0 = performance.now();
+  try {
+    const r = await api('GET', `/api/owners/${ownerId}/availability?storeId=${storeId}&date=${date}`);
+    const ms = Math.round(performance.now() - t0);
+    if (!r.ok) { statusEl.textContent = `HTTP ${r.status}`; statusEl.className = 'status err'; return; }
+    statusEl.textContent = `OK (${ms}ms, ${r.data.slots.length}개 슬롯)`; statusEl.className = 'status ok';
+    document.getElementById('availabilityGrid').innerHTML = r.data.slots.map(s =>
+      `<span class="slot ${s.state}" title="${s.time} - ${s.state}">${s.time.slice(0,5)}</span>`
+    ).join('');
+  } catch (e) {
+    statusEl.textContent = '오류: ' + e.message; statusEl.className = 'status err';
+  }
+}
+
+// initial load
+checkHealth();
+</script>
+</body>
+</html>

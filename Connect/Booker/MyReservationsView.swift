@@ -11,6 +11,7 @@ struct MyReservationsView: View {
     @State private var filter: Filter = .ongoing
     @State private var editingReservation: MyReservation? = nil
     @State private var cancelingReservation: MyReservation? = nil
+    @State private var isLoading = false
 
     // MARK: - 필터별 목록 (날짜 오름차순)
     private var pendingList: [MyReservation] {
@@ -109,10 +110,9 @@ struct MyReservationsView: View {
                 presenting: cancelingReservation
             ) { res in
                 Button("예, 취소합니다", role: .destructive) {
-                    if let idx = appState.myReservations.firstIndex(where: { $0.id == res.id }) {
-                        appState.myReservations[idx].status = .cancelled
-                    }
+                    let target = res
                     cancelingReservation = nil
+                    Task { await cancel(target) }
                 }
                 Button("아니요", role: .cancel) {
                     cancelingReservation = nil
@@ -120,6 +120,23 @@ struct MyReservationsView: View {
             } message: { _ in
                 Text("이 예약 신청을 정말 취소하시겠습니까? 취소 후에는 되돌릴 수 없어요.")
             }
+            .task { await loadReservations() }
+        }
+    }
+
+    // MARK: - 백엔드 연동
+    private func loadReservations() async {
+        isLoading = true
+        defer { isLoading = false }
+        if let dtos = try? await ConnectAPI.reservations(bookerId: appState.bookerId, statusGroup: nil) {
+            appState.myReservations = dtos.map { $0.toMyReservation() }
+        }
+    }
+
+    private func cancel(_ res: MyReservation) async {
+        if let updated = try? await ConnectAPI.cancelReservation(reservationId: res.id),
+           let idx = appState.myReservations.firstIndex(where: { $0.id == res.id }) {
+            appState.myReservations[idx] = updated.toMyReservation()
         }
     }
 

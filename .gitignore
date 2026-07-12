@@ -30,6 +30,7 @@ GoogleService-Info.plist
 
 # Build
 build/
+.jdk/
 *.ipa
 *.dSYM.zip
 *.dSYM

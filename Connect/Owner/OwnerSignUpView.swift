@@ -7,8 +7,11 @@ struct OwnerSignUpView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var storeName: String = ""
+    @State private var ownerName: String = ""
     @State private var contact: String = ""
     @State private var businessNumber: String = ""
+    @State private var isSubmitting: Bool = false
+    @State private var errorMessage: String? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -64,6 +67,11 @@ struct OwnerSignUpView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
+                        FormLabel(title: "대표자명")
+                        AppTextField(placeholder: "대표자 이름을 입력해주세요", text: $ownerName)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
                         FormLabel(title: "연락처")
                         AppTextField(placeholder: "‘-’ 없이 숫자만 입력해주세요", text: $contact)
                         // 키보드 타입을 숫자 패드로 지정
@@ -110,10 +118,20 @@ struct OwnerSignUpView: View {
                 .padding(.vertical, 8)
             }
 
-            Button { appState.finishOwnerSignUp() } label: {
-                Text("가입 신청하기")
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.bodyMD())
+                    .foregroundStyle(AppColors.danger)
+                    .padding(.horizontal, 18)
+            }
+
+            Button {
+                Task { await submit() }
+            } label: {
+                Text(isSubmitting ? "가입 처리 중..." : "가입 신청하기")
                     .foregroundStyle(AppColors.inkSecondary)
             }
+            .disabled(isSubmitting)
             .frame(maxWidth: .infinity, minHeight: 52)
             .background(AppColors.surfaceContainerHigh)
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.pill, style: .continuous))
@@ -122,6 +140,27 @@ struct OwnerSignUpView: View {
         }
         .background(AppColors.surface.ignoresSafeArea())
         .navigationBarHidden(true)
+    }
+
+    // MARK: - 백엔드 연동
+    private func submit() async {
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+        do {
+            let body = OwnerSignUpRequestBody(
+                storeName: storeName,
+                ownerName: ownerName,
+                contact: contact,
+                businessNumber: businessNumber
+            )
+            let profile = try await ConnectAPI.signUpOwner(body)
+            appState.ownerId = profile.id
+            appState.ownerStoreId = profile.storeId
+            appState.finishOwnerSignUp()
+        } catch {
+            errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
+        }
     }
 }
 

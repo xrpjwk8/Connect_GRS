@@ -60,15 +60,18 @@ public class ConnectService {
         UUID secondOwnerId = UUID.fromString("22222222-2222-2222-2222-222222222222");
         UUID bookerId = UUID.fromString("33333333-3333-3333-3333-333333333333");
 
-        owners.put(ownerId, new OwnerProfile(ownerId, "캠퍼스 포차", "김사장", "010-1111-2222", "123-45-67890"));
-        owners.put(secondOwnerId, new OwnerProfile(secondOwnerId, "스페이스 아지트", "박대표", "010-2222-3333", "234-56-78901"));
+        UUID firstStoreId = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        UUID secondStoreId = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+
+        owners.put(ownerId, new OwnerProfile(ownerId, "캠퍼스 포차", "김사장", "010-1111-2222", "123-45-67890", firstStoreId));
+        owners.put(secondOwnerId, new OwnerProfile(secondOwnerId, "스페이스 아지트", "박대표", "010-2222-3333", "234-56-78901", secondStoreId));
 
         bookers.put(bookerId, new BookerProfile(
                 bookerId, "연세대학교", "경영학과", "회장", "김지윤", "jiyun@yonsei.ac.kr", "010-9999-8888"
         ));
 
         Store store1 = new Store(
-                UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                firstStoreId,
                 ownerId,
                 "캠퍼스 포차",
                 "주점",
@@ -83,7 +86,7 @@ public class ConnectService {
                 List.of("최대 40명", "단체 환영", "신촌역 도보 4분")
         );
         Store store2 = new Store(
-                UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                secondStoreId,
                 secondOwnerId,
                 "스페이스 아지트",
                 "파티룸",
@@ -200,8 +203,6 @@ public class ConnectService {
 
     public OwnerProfile createOwner(OwnerSignUpRequest request) {
         UUID ownerId = UUID.randomUUID();
-        OwnerProfile owner = new OwnerProfile(ownerId, request.storeName(), request.ownerName(), request.contact(), request.businessNumber());
-        owners.put(ownerId, owner);
 
         Store seededStore = new Store(
                 UUID.randomUUID(),
@@ -220,6 +221,9 @@ public class ConnectService {
         );
         stores.put(seededStore.id(), seededStore);
         blocksByOwner.put(ownerId, new ArrayList<>());
+
+        OwnerProfile owner = new OwnerProfile(ownerId, request.storeName(), request.ownerName(), request.contact(), request.businessNumber(), seededStore.id());
+        owners.put(ownerId, owner);
         return owner;
     }
 
@@ -513,11 +517,11 @@ public class ConnectService {
     }
 
     private List<LocalTime> halfHourSlots() {
+        int startMinutes = 16 * 60;
+        int endMinutes = 23 * 60 + 30;
         List<LocalTime> slots = new ArrayList<>();
-        LocalTime current = LocalTime.of(16, 0);
-        while (!current.isAfter(LocalTime.of(23, 30))) {
-            slots.add(current);
-            current = current.plusMinutes(30);
+        for (int minutes = startMinutes; minutes <= endMinutes; minutes += 30) {
+            slots.add(LocalTime.of(minutes / 60, minutes % 60));
         }
         return slots;
     }

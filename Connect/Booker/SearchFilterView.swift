@@ -3,6 +3,7 @@ import SwiftUI
 // 필터 적용 시 부모에게 전달할 결과
 struct SearchFilter: Equatable {
     var region: String
+    var category: String
     var date: Date
     var people: Int
     var time: String
@@ -13,9 +14,15 @@ struct SearchFilterView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var region: String = "신촌"
+    @State private var category: String = "전체"
     @State private var date: Date = Date()
     @State private var peopleText: String = "25"
     @State private var time: String = "상관없음"
+
+    // 백엔드 /api/meta/filters 로 채워짐 (실패 시 MockData 값으로 폴백)
+    @State private var regionOptions: [String] = MockData.regions
+    @State private var categoryOptions: [String] = MockData.categories
+    @State private var timeOptions: [String] = MockData.timeOptions
 
     /// 부모로 결과 전달 콜백 (옵션)
     var onApply: ((SearchFilter) -> Void)? = nil
@@ -33,7 +40,7 @@ struct SearchFilterView: View {
 
                             let cols = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
                             LazyVGrid(columns: cols, spacing: 8) {
-                                ForEach(MockData.regions, id: \.self) { r in
+                                ForEach(regionOptions, id: \.self) { r in
                                     Button { region = r } label: {
                                         Text(r)
                                             .font(.bodyMD())
@@ -49,6 +56,24 @@ struct SearchFilterView: View {
                                             )
                                     }
                                     .buttonStyle(.plain)
+                                }
+                            }
+                        }
+
+                        Divider()
+
+                        // 1-1) 카테고리 선택
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("카테고리")
+                                .font(.headlineSM())
+                                .foregroundStyle(AppColors.ink)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(categoryOptions, id: \.self) { c in
+                                        ChipButton(title: c, isSelected: c == category) {
+                                            category = c
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -134,7 +159,7 @@ struct SearchFilterView: View {
                             }
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 10) {
-                                    ForEach(MockData.timeOptions, id: \.self) { t in
+                                    ForEach(timeOptions, id: \.self) { t in
                                         Button {
                                             time = t
                                         } label: {
@@ -164,6 +189,7 @@ struct SearchFilterView: View {
                 Button {
                     let result = SearchFilter(
                         region: region,
+                        category: category,
                         date: date,
                         people: Int(peopleText) ?? 0,
                         time: time
@@ -195,20 +221,31 @@ struct SearchFilterView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("초기화") {
-                        region = "신촌"
+                        region = regionOptions.first ?? "신촌"
+                        category = categoryOptions.first ?? "전체"
                         date = Date()
                         peopleText = "25"
-                        time = "상관없음"
+                        time = timeOptions.first ?? "상관없음"
                     }
                     .font(.bodyLG())
                     .foregroundStyle(AppColors.inkSecondary)
                 }
             }
         }
+        .task { await loadFilters() }
     }
 
     private func startOfToday() -> Date {
         Calendar.current.startOfDay(for: Date())
+    }
+
+    private func loadFilters() async {
+        guard let meta = try? await ConnectAPI.fetchFilters() else { return }
+        regionOptions = meta.regions
+        categoryOptions = meta.categories
+        timeOptions = ["상관없음"] + meta.timeOptions.filter { $0 != "상관없음" }
+        if !regionOptions.contains(region), let first = regionOptions.first { region = first }
+        if !categoryOptions.contains(category), let first = categoryOptions.first { category = first }
     }
 }
 

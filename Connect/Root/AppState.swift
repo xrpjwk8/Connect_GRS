@@ -35,11 +35,18 @@ final class AppState {
     /// 마지막으로 적용한 검색 필터 (지역/날짜/인원/시간)
     var lastSearchFilter: SearchFilter? = nil
 
-    /// 사용자가 신청한 예약 목록 (최신순)
-    var myReservations: [MyReservation] = MockData.allReservations
+    /// 사용자가 신청한 예약 목록 (최신순) — 백엔드 GET /api/bookers/{id}/reservations 로 채워짐
+    var myReservations: [MyReservation] = []
 
     /// 예약자 탭 현재 선택 (0:홈 / 1:찜 / 2:내 예약 / 3:마이페이지)
     var selectedBookerTab: Int = 0
+
+    // MARK: - 백엔드 연동 ID
+    // 회원가입 전에는 backend/README.md의 시드 샘플 ID로 기본 동작 (테스트 편의).
+    // 가입 완료 시 서버가 발급한 실제 ID로 교체됨.
+    var bookerId: UUID = UUID(uuidString: "33333333-3333-3333-3333-333333333333")!
+    var ownerId: UUID = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+    var ownerStoreId: UUID = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
 
     func goToBookerSignUp() {
         selectedRole = .booker
@@ -75,7 +82,10 @@ final class AppState {
         profileImageData = nil
         selectedSearchDate = nil
         lastSearchFilter = nil
-        myReservations = MockData.allReservations
+        myReservations = []
         selectedBookerTab = 0
+        bookerId = UUID(uuidString: "33333333-3333-3333-3333-333333333333")!
+        ownerId = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+        ownerStoreId = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
     }
 }

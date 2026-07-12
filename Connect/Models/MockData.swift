@@ -72,6 +72,7 @@ struct TimeSlot: Identifiable, Hashable {
     let id = UUID()
     let label: String  // "16:00 - 18:00"
     var state: TimeSlotState
+    var rawTime: String = ""  // 백엔드 원본 시간, 예: "16:00:00"
 }
 
 // MARK: - Mock 데이터

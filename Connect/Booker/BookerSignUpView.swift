@@ -11,6 +11,8 @@ struct BookerSignUpView: View {
     @State private var realName: String = ""
     @State private var schoolEmail: String = ""
     @State private var verificationCode: String = ""
+    @State private var isSubmitting: Bool = false
+    @State private var errorMessage: String? = nil
 
     // 버튼 활성화를 위한 유효성 검사 프로퍼티
     private var isEmailValid: Bool {
@@ -186,24 +188,53 @@ struct BookerSignUpView: View {
                 .padding(.vertical, 20)
             }
 
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.bodyMD())
+                    .foregroundStyle(AppColors.danger)
+                    .padding(.horizontal, 18)
+            }
+
             Button {
-                // 가입 정보 AppState에 저장 (마이페이지/홈 등에서 사용)
-                appState.schoolName = schoolName
-                appState.departmentName = departmentName
-                appState.position = position
-                appState.realName = realName
-                appState.schoolEmail = schoolEmail
-                appState.finishBookerSignUp()
+                Task { await submit() }
             } label: {
-                Text("가입 완료하기")
+                Text(isSubmitting ? "가입 처리 중..." : "가입 완료하기")
             }
             .buttonStyle(PrimaryFilledButtonStyle())
+            .disabled(isSubmitting)
 //            .disabled(!isFormValid) // 유효성 검사 실패 시 비활성화
             .padding(.horizontal, 18)
             .padding(.vertical, 12)
         }
         .background(AppColors.surface.ignoresSafeArea())
         .navigationBarHidden(true)
+    }
+
+    // MARK: - 백엔드 연동
+    private func submit() async {
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+        do {
+            let body = BookerSignUpRequestBody(
+                schoolName: schoolName,
+                departmentName: departmentName,
+                position: position,
+                realName: realName,
+                schoolEmail: schoolEmail,
+                phoneNumber: "010-0000-0000"
+            )
+            let profile = try await ConnectAPI.signUpBooker(body)
+            appState.bookerId = profile.id
+            appState.schoolName = schoolName
+            appState.departmentName = departmentName
+            appState.position = position
+            appState.realName = realName
+            appState.schoolEmail = schoolEmail
+            appState.finishBookerSignUp()
+        } catch {
+            errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
+        }
     }
 }
 
