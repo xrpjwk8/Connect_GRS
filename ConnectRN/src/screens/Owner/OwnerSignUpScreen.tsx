@@ -17,6 +17,7 @@ import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { AppTextField, FormLabel, InfoBanner } from '../../components/CommonComponents';
 import InteractiveUploader from '../../components/InteractiveUploader';
+import AgreementSection from '../../components/AgreementSection';
 
 export default function OwnerSignUpScreen() {
   const { finishOwnerSignUp, cancelSignUp } = useAppState();
@@ -24,6 +25,7 @@ export default function OwnerSignUpScreen() {
   const [storeName, setStoreName] = useState('');
   const [contact, setContact] = useState('');
   const [businessNumber, setBusinessNumber] = useState('');
+  const [allRequiredAgreed, setAllRequiredAgreed] = useState(false);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -85,11 +87,17 @@ export default function OwnerSignUpScreen() {
             title="가입 승인 안내"
             message="사업자 정보 확인 후 관리자 승인을 거쳐 서비스 이용이 가능합니다. 승인 완료까지 영업일 기준 1~2일이 소요될 수 있습니다."
           />
+
+          <AgreementSection onRequiredAgreedChange={setAllRequiredAgreed} />
         </ScrollView>
       </KeyboardAvoidingView>
 
       <View style={styles.footer}>
-        <Pressable style={styles.submitButton} onPress={finishOwnerSignUp}>
+        <Pressable
+          style={[styles.submitButton, !allRequiredAgreed && { opacity: 0.4 }]}
+          disabled={!allRequiredAgreed}
+          onPress={finishOwnerSignUp}
+        >
           <Text style={styles.submitButtonText}>가입 신청하기</Text>
         </Pressable>
       </View>

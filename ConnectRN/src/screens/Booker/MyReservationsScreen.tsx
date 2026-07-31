@@ -273,7 +273,7 @@ function ReservationCard({
 
       <View style={styles.reservationActionsRow}>
         {res.status === 'confirmed' ? (
-          <LimeButton title="위치 안내" style={{ flex: 1 }} onPress={handleLocationGuide} />
+          <LimeButton title="위치 안내" style={{ flex: 1, minHeight: 40 }} onPress={handleLocationGuide} />
         ) : (
           <>
             <GhostButton title="예약 수정" style={{ flex: 1, minHeight: 40 }} onPress={() => onEdit(res)} />

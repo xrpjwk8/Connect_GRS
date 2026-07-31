@@ -41,6 +41,13 @@ export default function ProfileEditScreen() {
   };
 
   const handleSave = () => {
+    Alert.alert('신원 재인증이 필요할 수 있습니다', '그래도 수정하시겠습니까?', [
+      { text: '아니요', style: 'cancel' },
+      { text: '예', onPress: submitSave },
+    ]);
+  };
+
+  const submitSave = () => {
     appState.setSchoolName(schoolName);
     appState.setDepartmentName(departmentName);
     appState.setPosition(position);
@@ -55,7 +62,7 @@ export default function ProfileEditScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.topBar}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="chevron-back" size={18} color={AppColors.ink} />
@@ -153,8 +160,7 @@ export default function ProfileEditScreen() {
       </ScrollView>
 
       <View style={styles.bottomBar}>
-        <GhostButton title="취소" style={{ flex: 1 }} onPress={() => navigation.goBack()} />
-        <LimeButton title="저장하기" style={{ flex: 1 }} onPress={handleSave} />
+        <LimeButton title="저장하기" style={{ flex: 1, borderRadius: AppRadius.lg }} onPress={handleSave} />
       </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

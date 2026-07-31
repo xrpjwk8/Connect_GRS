@@ -115,7 +115,10 @@ export default function StoreDetailScreen() {
     }
 
     const sortedTimes = [...selectedTimes].sort((a, b) => ALL_TIMES.indexOf(a) - ALL_TIMES.indexOf(b));
-    const timeLabel = sortedTimes.length === 1 ? sortedTimes[0] : `${sortedTimes[0]} ~ ${sortedTimes[sortedTimes.length - 1]}`;
+    const timeLabel =
+      sortedTimes.length === 1
+        ? sortedTimes[0]
+        : `${sortedTimes[0]} ~ ${addThirtyMinutes(sortedTimes[sortedTimes.length - 1])}`;
     const dateLabel = `${selectedDateLabel} ${timeLabel}`;
 
     const dateValue = new Date(anchor);

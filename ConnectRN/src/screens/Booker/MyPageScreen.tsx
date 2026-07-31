@@ -43,7 +43,6 @@ export default function MyPageScreen() {
           <Ionicons name="chevron-forward" size={18} color={AppColors.inkSecondary} />
         </Pressable>
 
-        <MenuRow icon="id-card-outline" title="개인정보 수정" onPress={() => navigation.navigate('ProfileEdit')} />
         <MenuRow icon="card-outline" title="결제 수단 관리" />
         <MenuRow icon="document-text-outline" title="이용 약관" />
         <MenuRow icon="help-circle-outline" title="도움말 / FAQ" />
