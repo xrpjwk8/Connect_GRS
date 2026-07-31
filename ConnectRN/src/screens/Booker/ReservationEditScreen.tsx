@@ -112,8 +112,16 @@ export default function ReservationEditScreen() {
       return;
     }
 
+    Alert.alert('예약을 수정하시겠습니까?', '변경한 내용으로 예약 정보가 저장돼요.', [
+      { text: '아니요', style: 'cancel' },
+      { text: '예, 수정합니다', onPress: () => submitSave(peopleNum) },
+    ]);
+  };
+
+  const submitSave = (peopleNum: number) => {
     const sorted = [...selectedTimes].sort((a, b) => ALL_TIMES.indexOf(a) - ALL_TIMES.indexOf(b));
-    const timeLabel = sorted.length === 1 ? sorted[0] : `${sorted[0]} ~ ${sorted[sorted.length - 1]}`;
+    const timeLabel =
+      sorted.length === 1 ? sorted[0] : `${sorted[0]} ~ ${addThirtyMinutes(sorted[sorted.length - 1])}`;
     const dateLabel = `${date.getMonth() + 1}/${date.getDate()} (${WEEKDAY_LETTERS[date.getDay()]}) ${timeLabel}`;
 
     setMyReservations(
@@ -284,7 +292,7 @@ export default function ReservationEditScreen() {
 
       <View style={styles.bottomBar}>
         <GhostButton title="취소" style={{ flex: 1 }} onPress={() => navigation.goBack()} />
-        <LimeButton title="변경 저장" style={{ flex: 1 }} onPress={handleSave} />
+        <LimeButton title="변경 저장" style={{ flex: 1, borderRadius: AppRadius.lg }} onPress={handleSave} />
       </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

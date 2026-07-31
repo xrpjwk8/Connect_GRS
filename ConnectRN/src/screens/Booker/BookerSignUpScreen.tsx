@@ -17,6 +17,7 @@ import { useAppState } from '../../state/AppState';
 import { universities } from '../../models/mockData';
 import { AppTextField, FormLabel, PickerField } from '../../components/CommonComponents';
 import { PrimaryFilledButton } from '../../components/Buttons';
+import AgreementSection from '../../components/AgreementSection';
 
 export default function BookerSignUpScreen() {
   const { finishBookerSignUp, cancelSignUp, setSchoolName, setDepartmentName, setPosition, setRealName, setSchoolEmail } =
@@ -28,6 +29,7 @@ export default function BookerSignUpScreen() {
   const [realName, setLocalRealName] = useState('');
   const [schoolEmail, setLocalSchoolEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
+  const [allRequiredAgreed, setAllRequiredAgreed] = useState(false);
 
   const isEmailValid = schoolEmail.includes('@') && schoolEmail.includes('.');
   const isCodeComplete = verificationCode.length === 6;
@@ -127,11 +129,20 @@ export default function BookerSignUpScreen() {
               </Pressable>
             </View>
           </View>
+
+          <View style={styles.divider} />
+
+          <AgreementSection onRequiredAgreedChange={setAllRequiredAgreed} />
         </ScrollView>
       </KeyboardAvoidingView>
 
       <View style={styles.footer}>
-        <PrimaryFilledButton title="가입 완료하기" onPress={handleSubmit} />
+        <PrimaryFilledButton
+          title="가입 완료하기"
+          onPress={handleSubmit}
+          disabled={!allRequiredAgreed}
+          style={{ opacity: allRequiredAgreed ? 1 : 0.4 }}
+        />
       </View>
     </SafeAreaView>
   );
