@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { showAlert } from '../../utils/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
@@ -38,9 +39,9 @@ export default function BookerLoginScreen() {
       finishBookerSignUp();
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
-        Alert.alert('가입 정보를 찾을 수 없어요', '해당 학교 메일로 가입된 계정이 없어요. 회원가입을 먼저 진행해주세요.');
+        showAlert('가입 정보를 찾을 수 없어요', '해당 학교 메일로 가입된 계정이 없어요. 회원가입을 먼저 진행해주세요.');
       } else {
-        Alert.alert('로그인에 실패했어요', '네트워크 연결을 확인해주세요.');
+        showAlert('로그인에 실패했어요', '네트워크 연결을 확인해주세요.');
       }
     } finally {
       setSubmitting(false);

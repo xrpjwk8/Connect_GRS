@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { showAlert } from '../../utils/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -41,7 +42,7 @@ export default function ProfileEditScreen() {
   };
 
   const handleSave = () => {
-    Alert.alert('신원 재인증이 필요할 수 있습니다', '그래도 수정하시겠습니까?', [
+    showAlert('신원 재인증이 필요할 수 있습니다', '그래도 수정하시겠습니까?', [
       { text: '아니요', style: 'cancel' },
       { text: '예', onPress: submitSave },
     ]);
@@ -56,7 +57,7 @@ export default function ProfileEditScreen() {
     appState.setPhoneNumber(phoneNumber);
     if (pendingImageUri) appState.setProfileImageUri(pendingImageUri);
 
-    Alert.alert('저장되었습니다', '프로필 정보가 업데이트되었습니다.', [
+    showAlert('저장되었습니다', '프로필 정보가 업데이트되었습니다.', [
       { text: '확인', onPress: () => navigation.goBack() },
     ]);
   };

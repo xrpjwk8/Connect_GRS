@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { showAlert } from '../../utils/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -101,11 +102,11 @@ export default function ReservationEditScreen() {
   const handleSave = () => {
     const peopleNum = Number(peopleText) || 0;
     if (peopleNum < 1) {
-      Alert.alert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
+      showAlert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
       return;
     }
     if (selectedTimes.length === 0) {
-      Alert.alert('입력을 확인해주세요', '예약 시간을 선택해주세요.');
+      showAlert('입력을 확인해주세요', '예약 시간을 선택해주세요.');
       return;
     }
     if (!currentReservation) {
@@ -113,7 +114,7 @@ export default function ReservationEditScreen() {
       return;
     }
 
-    Alert.alert('예약을 수정하시겠습니까?', '변경한 내용으로 예약 정보가 저장돼요.', [
+    showAlert('예약을 수정하시겠습니까?', '변경한 내용으로 예약 정보가 저장돼요.', [
       { text: '아니요', style: 'cancel' },
       { text: '예, 수정합니다', onPress: () => submitSave(peopleNum) },
     ]);
@@ -136,11 +137,11 @@ export default function ReservationEditScreen() {
         requestMessage,
       });
       await refreshReservations();
-      Alert.alert('변경 사항이 저장되었습니다', "'내 예약' 목록에서 변경된 정보를 확인할 수 있어요.", [
+      showAlert('변경 사항이 저장되었습니다', "'내 예약' 목록에서 변경된 정보를 확인할 수 있어요.", [
         { text: '확인', onPress: () => navigation.goBack() },
       ]);
     } catch (e) {
-      Alert.alert('저장에 실패했어요', '네트워크 연결을 확인해주세요.');
+      showAlert('저장에 실패했어요', '네트워크 연결을 확인해주세요.');
     } finally {
       setSaving(false);
     }

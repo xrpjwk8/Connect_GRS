@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { showAlert } from '../../utils/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
@@ -70,7 +70,7 @@ export default function BookerSignUpScreen() {
       finishBookerSignUp();
     } catch (e) {
       const message = e instanceof ApiError ? e.message : '네트워크 연결을 확인해주세요.';
-      Alert.alert('가입에 실패했어요', message);
+      showAlert('가입에 실패했어요', message);
     } finally {
       setSubmitting(false);
     }

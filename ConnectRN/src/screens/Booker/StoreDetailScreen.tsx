@@ -1,6 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -10,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { showAlert } from '../../utils/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -109,16 +109,16 @@ export default function StoreDetailScreen() {
 
   const handleSubmit = async () => {
     if (!bookerId) {
-      Alert.alert('로그인이 필요해요', '예약을 신청하려면 먼저 로그인해주세요.');
+      showAlert('로그인이 필요해요', '예약을 신청하려면 먼저 로그인해주세요.');
       return;
     }
     if (selectedTimes.length === 0) {
-      Alert.alert('입력을 확인해주세요', '예약 시간을 선택해주세요.');
+      showAlert('입력을 확인해주세요', '예약 시간을 선택해주세요.');
       return;
     }
     const peopleNum = Number(peopleText) || 0;
     if (peopleNum < 1) {
-      Alert.alert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
+      showAlert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
       return;
     }
 
@@ -149,7 +149,7 @@ export default function StoreDetailScreen() {
       return booked + peopleNum > store.maxCapacity;
     });
     if (overCapacity) {
-      Alert.alert(
+      showAlert(
         '예약 불가',
         capacityOverbookingEnabled
           ? '선택하신 시간대는 매장 정원이 가득 찼어요. 인원을 줄이거나 다른 시간을 선택해주세요.'
@@ -175,7 +175,7 @@ export default function StoreDetailScreen() {
         requestMessage,
       });
       await refreshReservations();
-      Alert.alert('예약 신청 완료', '점주님께 예약 요청을 보냈어요.\n‘내 예약’ 탭에서 진행 상황을 확인할 수 있어요.', [
+      showAlert('예약 신청 완료', '점주님께 예약 요청을 보냈어요.\n‘내 예약’ 탭에서 진행 상황을 확인할 수 있어요.', [
         {
           text: '내 예약 보기',
           onPress: () => {
@@ -187,7 +187,7 @@ export default function StoreDetailScreen() {
       ]);
     } catch (e) {
       const message = e instanceof ApiError ? e.message : '네트워크 연결을 확인해주세요.';
-      Alert.alert('예약 신청에 실패했어요', message);
+      showAlert('예약 신청에 실패했어요', message);
     } finally {
       setSubmitting(false);
     }

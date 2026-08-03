@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { showAlert } from '../../utils/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -77,12 +78,12 @@ export default function ManualReservationScreen() {
 
   const handleSubmit = () => {
     if (sortedTimes.length === 0) {
-      Alert.alert('입력을 확인해주세요', '예약 시간대를 선택해주세요.');
+      showAlert('입력을 확인해주세요', '예약 시간대를 선택해주세요.');
       return;
     }
     const peopleNum = Number(peopleText) || 0;
     if (peopleNum < 1) {
-      Alert.alert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
+      showAlert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
       return;
     }
 

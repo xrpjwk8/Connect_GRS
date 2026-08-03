@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
-import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { showAlert } from '../../utils/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -51,7 +52,7 @@ export default function MyReservationsScreen() {
   const rejectedList = myReservations.filter((r) => r.status === 'rejected').sort(dateAscending);
 
   const handleCancel = (res: MyReservation) => {
-    Alert.alert('신청을 취소하시겠습니까?', '이 예약 신청을 정말 취소하시겠습니까? 취소 후에는 되돌릴 수 없어요.', [
+    showAlert('신청을 취소하시겠습니까?', '이 예약 신청을 정말 취소하시겠습니까? 취소 후에는 되돌릴 수 없어요.', [
       { text: '아니요', style: 'cancel' },
       {
         text: '예, 취소합니다',
@@ -61,7 +62,7 @@ export default function MyReservationsScreen() {
             await cancelReservation(res.id);
             await refreshReservations();
           } catch (e) {
-            Alert.alert('취소에 실패했어요', '네트워크 연결을 확인해주세요.');
+            showAlert('취소에 실패했어요', '네트워크 연결을 확인해주세요.');
           }
         },
       },
@@ -238,11 +239,11 @@ function ReservationCard({
   const handleLocationGuide = () => {
     const mapUrl = res.storeId === ownerStoreInfo?.id ? storeNaverMapUrl || storeKakaoMapUrl : null;
     if (!mapUrl) {
-      Alert.alert('위치 정보 없음', '점주가 아직 지도 링크를 등록하지 않았어요.');
+      showAlert('위치 정보 없음', '점주가 아직 지도 링크를 등록하지 않았어요.');
       return;
     }
     Linking.openURL(mapUrl).catch(() => {
-      Alert.alert('열 수 없어요', '등록된 지도 링크가 올바르지 않아요.');
+      showAlert('열 수 없어요', '등록된 지도 링크가 올바르지 않아요.');
     });
   };
 

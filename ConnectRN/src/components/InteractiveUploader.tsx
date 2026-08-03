@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActionSheetIOS, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { showAlert } from '../utils/alert';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,7 +65,7 @@ export default function InteractiveUploader({
         }
       );
     } else {
-      Alert.alert('업로드 방법 선택', undefined, [
+      showAlert('업로드 방법 선택', undefined, [
         { text: '사진 보관함', onPress: pickPhoto },
         { text: '파일 앱', onPress: pickFile },
         { text: '취소', style: 'cancel' },
