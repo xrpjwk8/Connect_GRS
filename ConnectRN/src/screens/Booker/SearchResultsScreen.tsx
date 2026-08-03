@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,9 +7,13 @@ import { AppColors } from '../../theme/colors';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
-import { ownerStore, searchResults } from '../../models/mockData';
+import { searchStores } from '../../api/stores';
 import { StoreCard } from '../../components/CommonComponents';
 import type { SearchFilter, Store } from '../../models/types';
+
+function toIsoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function formatFilterSummary(filter: SearchFilter | null): string {
   if (!filter) return '검색 조건이 설정되지 않았어요';
@@ -25,7 +29,21 @@ function formatFilterSummary(filter: SearchFilter | null): string {
 
 export default function SearchResultsScreen() {
   const navigation = useNavigation<any>();
-  const { lastSearchFilter, setLastSearchFilter, setSelectedSearchDate, storePhotoWideUri } = useAppState();
+  const { lastSearchFilter, setLastSearchFilter, setSelectedSearchDate, storePhotoWideUri, bookerId, ownerStoreInfo } =
+    useAppState();
+  const [searchResults, setSearchResults] = useState<Store[]>([]);
+
+  useEffect(() => {
+    searchStores({
+      bookerId: bookerId ?? undefined,
+      region: lastSearchFilter?.region,
+      people: lastSearchFilter?.people,
+      date: lastSearchFilter?.date ? toIsoDate(lastSearchFilter.date) : undefined,
+      time: lastSearchFilter?.time && lastSearchFilter.time !== '상관없음' ? `${lastSearchFilter.time}:00` : undefined,
+    })
+      .then(setSearchResults)
+      .catch((e) => console.warn('Failed to search stores', e));
+  }, [lastSearchFilter, bookerId]);
 
   const handleOpenFilter = () => {
     navigation.navigate('SearchFilter', {
@@ -54,7 +72,7 @@ export default function SearchResultsScreen() {
         <Text style={styles.resultsTitle}>검색 결과 ({searchResults.length})</Text>
         {searchResults.map((store: Store) => (
           <Pressable key={store.id} onPress={() => navigation.navigate('StoreDetail', { store })}>
-            <StoreCard store={store} photoUri={store.id === ownerStore.id ? storePhotoWideUri : undefined} />
+            <StoreCard store={store} photoUri={store.id === ownerStoreInfo?.id ? storePhotoWideUri : undefined} />
           </Pressable>
         ))}
       </ScrollView>

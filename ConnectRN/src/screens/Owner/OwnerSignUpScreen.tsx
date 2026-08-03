@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,14 +19,35 @@ import { useAppState } from '../../state/AppState';
 import { AppTextField, FormLabel, InfoBanner } from '../../components/CommonComponents';
 import InteractiveUploader from '../../components/InteractiveUploader';
 import AgreementSection from '../../components/AgreementSection';
+import { signUpOwner } from '../../api/auth';
+import { getStore } from '../../api/stores';
+import { ApiError } from '../../api/client';
 
 export default function OwnerSignUpScreen() {
-  const { finishOwnerSignUp, cancelSignUp } = useAppState();
+  const { finishOwnerSignUp, cancelSignUp, setOwnerId, setOwnerStoreInfo } = useAppState();
 
   const [storeName, setStoreName] = useState('');
+  const [ownerName, setOwnerName] = useState('');
   const [contact, setContact] = useState('');
   const [businessNumber, setBusinessNumber] = useState('');
   const [allRequiredAgreed, setAllRequiredAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const owner = await signUpOwner({ storeName, ownerName, contact, businessNumber });
+      setOwnerId(owner.id);
+      setOwnerStoreInfo(await getStore(owner.storeId));
+      finishOwnerSignUp();
+    } catch (e) {
+      const message = e instanceof ApiError ? e.message : '네트워크 연결을 확인해주세요.';
+      Alert.alert('가입에 실패했어요', message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -51,6 +73,11 @@ export default function OwnerSignUpScreen() {
               value={storeName}
               onChangeText={(text) => setStoreName(text.slice(0, 20))}
             />
+          </View>
+
+          <View style={styles.field}>
+            <FormLabel title="대표자명" />
+            <AppTextField placeholder="대표자 성함을 입력해주세요" value={ownerName} onChangeText={setOwnerName} />
           </View>
 
           <View style={styles.field}>
@@ -94,11 +121,11 @@ export default function OwnerSignUpScreen() {
 
       <View style={styles.footer}>
         <Pressable
-          style={[styles.submitButton, !allRequiredAgreed && { opacity: 0.4 }]}
-          disabled={!allRequiredAgreed}
-          onPress={finishOwnerSignUp}
+          style={[styles.submitButton, (!allRequiredAgreed || !ownerName || submitting) && { opacity: 0.4 }]}
+          disabled={!allRequiredAgreed || !ownerName || submitting}
+          onPress={handleSubmit}
         >
-          <Text style={styles.submitButtonText}>가입 신청하기</Text>
+          <Text style={styles.submitButtonText}>{submitting ? '가입 처리 중...' : '가입 신청하기'}</Text>
         </Pressable>
       </View>
     </SafeAreaView>

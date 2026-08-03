@@ -1,16 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
-import { defaultTimeSlots, ownerStore } from '../../models/mockData';
+import { defaultTimeSlots } from '../../models/mockData';
 import { useAppState } from '../../state/AppState';
 import { InfoBanner } from '../../components/CommonComponents';
 import { dateKey, isSameDay, parseDateKey } from '../../utils/date';
+import { replaceBlockedSlots } from '../../api/stores';
 import type { TimeSlot, TimeSlotState } from '../../models/types';
 
 const WEEKDAY_LETTERS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -28,7 +29,22 @@ function buildWeekDays(start: Date): Date[] {
 export default function TimeBlockScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { myReservations, capacityOverbookingEnabled, blockedSlotsByDate, setBlockedSlotsByDate } = useAppState();
+  const {
+    myReservations,
+    refreshReservations,
+    capacityOverbookingEnabled,
+    blockedSlotsByDate,
+    setBlockedSlotsByDate,
+    ownerId,
+    ownerStoreInfo,
+  } = useAppState();
+  const maxCapacity = ownerStoreInfo?.maxCapacity ?? 0;
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshReservations();
+    }, [refreshReservations])
+  );
 
   const requestedStart: string | undefined = route.params?.dateKey;
   const weekDays = useMemo(() => buildWeekDays(requestedStart ? parseDateKey(requestedStart) : new Date()), [requestedStart]);
@@ -38,7 +54,7 @@ export default function TimeBlockScreen() {
   const bookedPeopleByStart = useMemo(() => {
     const map = new Map<string, number>();
     myReservations.forEach((r) => {
-      if (r.storeId !== ownerStore.id || r.status !== 'confirmed' || !r.dateValue) return;
+      if (r.status !== 'confirmed' || !r.dateValue) return;
       if (!isSameDay(r.dateValue, selectedDate)) return;
       r.timeLabels.forEach((t) => map.set(t, (map.get(t) ?? 0) + r.people));
     });
@@ -53,7 +69,7 @@ export default function TimeBlockScreen() {
         const start = slot.label.split(' ~ ')[0];
         const booked = bookedPeopleByStart.get(start) ?? 0;
         if (slot.state === 'closed') return { ...slot, booked };
-        const isFull = capacityOverbookingEnabled ? booked >= ownerStore.maxCapacity : booked > 0;
+        const isFull = capacityOverbookingEnabled ? booked >= maxCapacity : booked > 0;
         let state: TimeSlotState = 'available';
         if (isFull) state = 'reserved';
         else if (blockedStarts.has(start)) state = 'blocked';
@@ -69,7 +85,17 @@ export default function TimeBlockScreen() {
     const current = new Set(blockedSlotsByDate[key] ?? []);
     if (current.has(start)) current.delete(start);
     else current.add(start);
-    setBlockedSlotsByDate({ ...blockedSlotsByDate, [key]: Array.from(current) });
+    const next = Array.from(current);
+    setBlockedSlotsByDate({ ...blockedSlotsByDate, [key]: next });
+
+    if (ownerId && ownerStoreInfo && next.length > 0) {
+      const isoDate = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(
+        selectedDate.getDate()
+      ).padStart(2, '0')}`;
+      replaceBlockedSlots(ownerId, ownerStoreInfo.id, isoDate, next).catch((e) =>
+        console.warn('Failed to sync blocked slots', e)
+      );
+    }
   };
 
   return (
@@ -133,7 +159,7 @@ export default function TimeBlockScreen() {
 
         <View style={styles.slotGrid}>
           {slots.map((slot) => (
-            <TimeSlotCell key={slot.id} slot={slot} onPress={() => toggle(slot)} />
+            <TimeSlotCell key={slot.id} slot={slot} maxCapacity={maxCapacity} onPress={() => toggle(slot)} />
           ))}
         </View>
       </ScrollView>
@@ -146,7 +172,15 @@ export default function TimeBlockScreen() {
   );
 }
 
-function TimeSlotCell({ slot, onPress }: { slot: TimeSlot & { booked: number }; onPress: () => void }) {
+function TimeSlotCell({
+  slot,
+  maxCapacity,
+  onPress,
+}: {
+  slot: TimeSlot & { booked: number };
+  maxCapacity: number;
+  onPress: () => void;
+}) {
   const isClosed = slot.state === 'closed';
   const isBlocked = slot.state === 'blocked';
   const isReserved = slot.state === 'reserved';
@@ -161,9 +195,9 @@ function TimeSlotCell({ slot, onPress }: { slot: TimeSlot & { booked: number }; 
   const textColor = isClosed ? AppColors.neutral : isBlocked || isReserved ? AppColors.white : AppColors.ink;
 
   const subLabel = isReserved
-    ? `정원 마감 ${slot.booked}/${ownerStore.maxCapacity}명`
+    ? `정원 마감 ${slot.booked}/${maxCapacity}명`
     : slot.booked > 0
-    ? `${slot.booked}/${ownerStore.maxCapacity}명 예약됨`
+    ? `${slot.booked}/${maxCapacity}명 예약됨`
     : null;
 
   return (

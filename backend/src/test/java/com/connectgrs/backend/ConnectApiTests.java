@@ -78,4 +78,66 @@ class ConnectApiTests {
                 .andExpect(jsonPath("$.people").value(16))
                 .andExpect(jsonPath("$.eventPurpose").value("회식"));
     }
+
+    @Test
+    void sendsAndListsChatMessages() throws Exception {
+        mockMvc.perform(post("/api/reservations/dddddddd-dddd-dddd-dddd-dddddddddddd/messages")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "senderId": "33333333-3333-3333-3333-333333333333",
+                                  "senderRole": "BOOKER",
+                                  "text": "계좌번호 알려주세요"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.text").value("계좌번호 알려주세요"))
+                .andExpect(jsonPath("$.senderRole").value("BOOKER"));
+
+        mockMvc.perform(get("/api/reservations/dddddddd-dddd-dddd-dddd-dddddddddddd/messages"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].text").value("계좌번호 알려주세요"));
+    }
+
+    @Test
+    void registersDeviceTokenAndNotifiesOwnerOnReservationRequest() throws Exception {
+        mockMvc.perform(post("/api/devices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": "11111111-1111-1111-1111-111111111111",
+                                  "role": "OWNER",
+                                  "expoPushToken": "ExponentPushToken[test-token]"
+                                }
+                                """))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/reservations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "storeId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                                  "bookerId": "33333333-3333-3333-3333-333333333333",
+                                  "date": "2030-08-01",
+                                  "timeSlots": ["19:00:00"],
+                                  "people": 10,
+                                  "eventPurpose": "동아리 모임"
+                                }
+                                """))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void looksUpBookerAndOwnerForLogin() throws Exception {
+        mockMvc.perform(get("/api/auth/bookers/lookup").param("schoolEmail", "jiyun@yonsei.ac.kr"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.realName").value("김지윤"));
+
+        mockMvc.perform(get("/api/auth/owners/lookup").param("contact", "010-1111-2222"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.storeName").value("캠퍼스 포차"));
+
+        mockMvc.perform(get("/api/auth/bookers/lookup").param("schoolEmail", "nobody@nowhere.com"))
+                .andExpect(status().isNotFound());
+    }
 }

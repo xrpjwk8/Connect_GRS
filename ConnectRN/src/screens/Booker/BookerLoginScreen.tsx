@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
@@ -8,16 +8,44 @@ import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { AppTextField, FormLabel } from '../../components/CommonComponents';
 import { LimeButton } from '../../components/Buttons';
+import { lookupBookerByEmail } from '../../api/auth';
+import { ApiError } from '../../api/client';
 
 export default function BookerLoginScreen() {
-  const { finishBookerSignUp, cancelSignUp } = useAppState();
+  const { finishBookerSignUp, cancelSignUp, setBookerId, setSchoolName, setDepartmentName, setPosition, setRealName, setSchoolEmail, setPhoneNumber } =
+    useAppState();
 
-  const [schoolEmail, setSchoolEmail] = useState('');
+  const [schoolEmail, setLocalSchoolEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const isEmailValid = schoolEmail.includes('@') && schoolEmail.includes('.');
   const isCodeComplete = verificationCode.length === 6;
+
+  const handleLogin = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const booker = await lookupBookerByEmail(schoolEmail);
+      setBookerId(booker.id);
+      setSchoolName(booker.schoolName);
+      setDepartmentName(booker.departmentName);
+      setPosition(booker.position);
+      setRealName(booker.realName);
+      setSchoolEmail(booker.schoolEmail);
+      setPhoneNumber(booker.phoneNumber);
+      finishBookerSignUp();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) {
+        Alert.alert('가입 정보를 찾을 수 없어요', '해당 학교 메일로 가입된 계정이 없어요. 회원가입을 먼저 진행해주세요.');
+      } else {
+        Alert.alert('로그인에 실패했어요', '네트워크 연결을 확인해주세요.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -43,7 +71,7 @@ export default function BookerLoginScreen() {
                 <AppTextField
                   placeholder="example@university.ac.kr"
                   value={schoolEmail}
-                  onChangeText={setSchoolEmail}
+                  onChangeText={setLocalSchoolEmail}
                   autoCapitalize="none"
                   keyboardType="email-address"
                 />
@@ -72,7 +100,11 @@ export default function BookerLoginScreen() {
       </KeyboardAvoidingView>
 
       <View style={styles.footer}>
-        <LimeButton title="로그인하기" onPress={finishBookerSignUp} disabled={!isCodeComplete} />
+        <LimeButton
+          title={submitting ? '로그인 중...' : '로그인하기'}
+          onPress={handleLogin}
+          disabled={!isCodeComplete || submitting}
+        />
       </View>
     </SafeAreaView>
   );

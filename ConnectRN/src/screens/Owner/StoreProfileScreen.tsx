@@ -8,12 +8,11 @@ import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
-import { ownerStore } from '../../models/mockData';
 import { GhostButton } from '../../components/Buttons';
 
 export default function StoreProfileScreen() {
   const navigation = useNavigation<any>();
-  const { logout } = useAppState();
+  const { logout, ownerStoreInfo } = useAppState();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -27,8 +26,8 @@ export default function StoreProfileScreen() {
             <Ionicons name="storefront-outline" size={26} color={AppColors.primaryDeep} />
           </View>
           <View style={{ flex: 1, gap: 4 }}>
-            <Text style={styles.storeLocation}>{ownerStore.location}</Text>
-            <Text style={styles.storeName}>{ownerStore.name}</Text>
+            <Text style={styles.storeLocation}>{ownerStoreInfo?.location ?? ''}</Text>
+            <Text style={styles.storeName}>{ownerStoreInfo?.name ?? ''}</Text>
           </View>
         </View>
 

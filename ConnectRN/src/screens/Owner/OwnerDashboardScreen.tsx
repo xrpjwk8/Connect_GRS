@@ -1,23 +1,30 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
-import { ownerStore } from '../../models/mockData';
 import { useAppState } from '../../state/AppState';
 import { TagLabel } from '../../components/CommonComponents';
+import { approveReservation, rejectReservation } from '../../api/reservations';
 import type { MyReservation } from '../../models/types';
 
 export default function OwnerDashboardScreen() {
-  const { myReservations, setMyReservations } = useAppState();
+  const { myReservations, refreshReservations, ownerId, ownerStoreInfo } = useAppState();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshReservations();
+    }, [refreshReservations])
+  );
 
   const requests = useMemo(
     () =>
       myReservations
-        .filter((r) => r.storeId === ownerStore.id && r.status === 'pending')
+        .filter((r) => r.status === 'pending')
         .sort((a, b) => (a.dateValue?.getTime() ?? 0) - (b.dateValue?.getTime() ?? 0)),
     [myReservations]
   );
@@ -28,7 +35,6 @@ export default function OwnerDashboardScreen() {
     return myReservations
       .filter(
         (r) =>
-          r.storeId === ownerStore.id &&
           r.status === 'confirmed' &&
           r.dateValue &&
           r.dateValue.getTime() >= now &&
@@ -37,8 +43,18 @@ export default function OwnerDashboardScreen() {
       .sort((a, b) => (a.dateValue?.getTime() ?? 0) - (b.dateValue?.getTime() ?? 0));
   }, [myReservations]);
 
-  const decide = (id: string, decision: 'confirmed' | 'rejected') => {
-    setMyReservations(myReservations.map((r) => (r.id === id ? { ...r, status: decision } : r)));
+  const decide = async (id: string, decision: 'confirmed' | 'rejected') => {
+    if (!ownerId) return;
+    try {
+      if (decision === 'confirmed') {
+        await approveReservation(ownerId, id);
+      } else {
+        await rejectReservation(ownerId, id);
+      }
+      await refreshReservations();
+    } catch (e) {
+      console.warn('Failed to update reservation status', e);
+    }
   };
 
   return (
@@ -50,7 +66,9 @@ export default function OwnerDashboardScreen() {
 
         <View style={styles.storeRow}>
           <Ionicons name="storefront-outline" size={16} color={AppColors.inkSecondary} />
-          <Text style={styles.storeRowText}>[홍대] 캠퍼스 포차</Text>
+          <Text style={styles.storeRowText}>
+            {ownerStoreInfo ? `[${ownerStoreInfo.location}] ${ownerStoreInfo.name}` : ''}
+          </Text>
         </View>
 
         <View style={styles.sectionTitleRow}>

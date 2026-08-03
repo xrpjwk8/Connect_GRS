@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -11,36 +11,59 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { InfoBanner } from '../../components/CommonComponents';
+import { getMessages, sendMessage } from '../../api/chat';
+import type { ChatMessage } from '../../models/types';
 
 const OWNER_QUICK_REPLIES = ['계좌번호: 국민은행 123456-78-901234', '입금 확인했습니다, 감사합니다!'];
 const BOOKER_QUICK_REPLIES = ['계좌번호 알려주세요', '방금 입금했습니다!'];
+const POLL_INTERVAL_MS = 4000;
 
 export default function ChatScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { reservationId } = route.params;
-  const { selectedRole, myReservations, chatMessages, sendChatMessage } = useAppState();
+  const { selectedRole, myReservations, bookerId, ownerId } = useAppState();
   const role = selectedRole ?? 'booker';
   const isOwner = role === 'owner';
+  const senderId = isOwner ? ownerId : bookerId;
 
   const reservation = myReservations.find((r) => r.id === reservationId);
-  const messages = chatMessages.filter((m) => m.reservationId === reservationId);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const quickReplies = isOwner ? OWNER_QUICK_REPLIES : BOOKER_QUICK_REPLIES;
 
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<ScrollView>(null);
 
-  const handleSend = (text: string) => {
-    if (!text.trim()) return;
-    sendChatMessage(reservationId, role, text);
+  const refresh = useCallback(() => {
+    getMessages(reservationId)
+      .then(setMessages)
+      .catch((e) => console.warn('Failed to load chat messages', e));
+  }, [reservationId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      const interval = setInterval(refresh, POLL_INTERVAL_MS);
+      return () => clearInterval(interval);
+    }, [refresh])
+  );
+
+  const handleSend = async (text: string) => {
+    if (!text.trim() || !senderId) return;
     setDraft('');
+    try {
+      await sendMessage(reservationId, senderId, role, text);
+      refresh();
+    } catch (e) {
+      console.warn('Failed to send chat message', e);
+    }
   };
 
   const peerName = isOwner ? reservation?.bookerName || '예약자' : reservation?.storeName || '가게';

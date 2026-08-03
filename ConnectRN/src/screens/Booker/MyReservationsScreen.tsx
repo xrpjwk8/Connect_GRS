@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
-import { ownerStore } from '../../models/mockData';
 import { TagLabel } from '../../components/CommonComponents';
 import { GhostButton, LimeButton } from '../../components/Buttons';
 import Card from '../../components/Card';
+import { cancelReservation } from '../../api/reservations';
 import type { MyReservation } from '../../models/types';
 
 function useReservationThumbUri(res: MyReservation): string | null {
-  const { storePhotoSquareUri } = useAppState();
-  return res.storeId === ownerStore.id ? storePhotoSquareUri : null;
+  const { storePhotoSquareUri, ownerStoreInfo } = useAppState();
+  return res.storeId === ownerStoreInfo?.id ? storePhotoSquareUri : null;
 }
 
 type FilterKey = 'ongoing' | 'done' | 'cancelled';
@@ -35,8 +35,14 @@ function dateAscending(a: MyReservation, b: MyReservation): number {
 
 export default function MyReservationsScreen() {
   const navigation = useNavigation<any>();
-  const { myReservations, setMyReservations } = useAppState();
+  const { myReservations, refreshReservations } = useAppState();
   const [filter, setFilter] = useState<FilterKey>('ongoing');
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshReservations();
+    }, [refreshReservations])
+  );
 
   const pendingList = myReservations.filter((r) => r.status === 'pending').sort(dateAscending);
   const confirmedList = myReservations.filter((r) => r.status === 'confirmed').sort(dateAscending);
@@ -50,8 +56,13 @@ export default function MyReservationsScreen() {
       {
         text: '예, 취소합니다',
         style: 'destructive',
-        onPress: () => {
-          setMyReservations(myReservations.map((r) => (r.id === res.id ? { ...r, status: 'cancelled' } : r)));
+        onPress: async () => {
+          try {
+            await cancelReservation(res.id);
+            await refreshReservations();
+          } catch (e) {
+            Alert.alert('취소에 실패했어요', '네트워크 연결을 확인해주세요.');
+          }
         },
       },
     ]);
@@ -222,10 +233,10 @@ function ReservationCard({
   onCancel: (res: MyReservation) => void;
 }) {
   const thumbUri = useReservationThumbUri(res);
-  const { storeNaverMapUrl, storeKakaoMapUrl } = useAppState();
+  const { storeNaverMapUrl, storeKakaoMapUrl, ownerStoreInfo } = useAppState();
 
   const handleLocationGuide = () => {
-    const mapUrl = res.storeId === ownerStore.id ? storeNaverMapUrl || storeKakaoMapUrl : null;
+    const mapUrl = res.storeId === ownerStoreInfo?.id ? storeNaverMapUrl || storeKakaoMapUrl : null;
     if (!mapUrl) {
       Alert.alert('위치 정보 없음', '점주가 아직 지도 링크를 등록하지 않았어요.');
       return;

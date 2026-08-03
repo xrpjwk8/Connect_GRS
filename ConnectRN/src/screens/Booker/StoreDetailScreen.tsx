@@ -21,6 +21,8 @@ import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { InfoBanner, TagLabel } from '../../components/CommonComponents';
 import { isSameDay } from '../../utils/date';
+import { createReservation } from '../../api/reservations';
+import { ApiError } from '../../api/client';
 import type { Store } from '../../models/types';
 
 const TIME_ROWS: string[][] = [
@@ -52,8 +54,9 @@ export default function StoreDetailScreen() {
   const {
     selectedSearchDate,
     myReservations,
-    setMyReservations,
+    refreshReservations,
     setSelectedBookerTab,
+    bookerId,
     realName,
     schoolName,
     departmentName,
@@ -67,6 +70,7 @@ export default function StoreDetailScreen() {
   const [budget, setBudget] = useState('25000');
   const [eventPurpose, setEventPurpose] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const anchor = selectedSearchDate ?? new Date();
   const selectedDateLabel = `${anchor.getMonth() + 1}월 ${anchor.getDate()}일 (${WEEKDAY_LETTERS[anchor.getDay()]})`;
@@ -103,7 +107,11 @@ export default function StoreDetailScreen() {
     return `${first} ~ ${addThirtyMinutes(last)} (${sorted.length}칸)`;
   }, [selectedTimes]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!bookerId) {
+      Alert.alert('로그인이 필요해요', '예약을 신청하려면 먼저 로그인해주세요.');
+      return;
+    }
     if (selectedTimes.length === 0) {
       Alert.alert('입력을 확인해주세요', '예약 시간을 선택해주세요.');
       return;
@@ -150,38 +158,39 @@ export default function StoreDetailScreen() {
       return;
     }
 
-    setMyReservations([
-      {
-        id: `res-${Date.now()}`,
+    const isoDate = `${dateValue.getFullYear()}-${String(dateValue.getMonth() + 1).padStart(2, '0')}-${String(
+      dateValue.getDate()
+    ).padStart(2, '0')}`;
+
+    setSubmitting(true);
+    try {
+      await createReservation({
         storeId: store.id,
-        storeName: store.name,
-        imageSymbol: store.imageName,
-        status: 'pending',
-        dateLabel,
+        bookerId,
+        date: isoDate,
+        timeSlots: sortedTimes.map((t) => `${t}:00`),
         people: peopleNum,
-        budget: Number(budget) || undefined,
-        bookerName: realName.trim() || '예약자',
-        bookerAffiliation: schoolName.trim()
-          ? `${schoolName.trim()}${departmentName.trim() ? ` · ${departmentName.trim()}` : ''}`
-          : '학교 정보 미입력',
-        dateValue,
-        timeLabels: sortedTimes,
+        budgetPerPerson: Number(budget) || undefined,
         eventPurpose,
         requestMessage,
-      },
-      ...myReservations,
-    ]);
-
-    Alert.alert('예약 신청 완료', '점주님께 예약 요청을 보냈어요.\n‘내 예약’ 탭에서 진행 상황을 확인할 수 있어요.', [
-      {
-        text: '내 예약 보기',
-        onPress: () => {
-          setSelectedBookerTab(2);
-          navigation.goBack();
+      });
+      await refreshReservations();
+      Alert.alert('예약 신청 완료', '점주님께 예약 요청을 보냈어요.\n‘내 예약’ 탭에서 진행 상황을 확인할 수 있어요.', [
+        {
+          text: '내 예약 보기',
+          onPress: () => {
+            setSelectedBookerTab(2);
+            navigation.goBack();
+          },
         },
-      },
-      { text: '닫기', style: 'cancel', onPress: () => navigation.goBack() },
-    ]);
+        { text: '닫기', style: 'cancel', onPress: () => navigation.goBack() },
+      ]);
+    } catch (e) {
+      const message = e instanceof ApiError ? e.message : '네트워크 연결을 확인해주세요.';
+      Alert.alert('예약 신청에 실패했어요', message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -341,8 +350,8 @@ export default function StoreDetailScreen() {
       </ScrollView>
 
       <BlurView intensity={40} tint="light" style={styles.bottomCTA}>
-        <Pressable style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>예약 신청하기</Text>
+        <Pressable style={[styles.submitButton, submitting && { opacity: 0.6 }]} onPress={handleSubmit} disabled={submitting}>
+          <Text style={styles.submitButtonText}>{submitting ? '신청 중...' : '예약 신청하기'}</Text>
           <Ionicons name="arrow-forward" size={18} color={AppColors.ink} />
         </Pressable>
       </BlurView>

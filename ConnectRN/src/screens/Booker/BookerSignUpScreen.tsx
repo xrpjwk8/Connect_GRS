@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,29 +19,61 @@ import { universities } from '../../models/mockData';
 import { AppTextField, FormLabel, PickerField } from '../../components/CommonComponents';
 import { PrimaryFilledButton } from '../../components/Buttons';
 import AgreementSection from '../../components/AgreementSection';
+import { signUpBooker } from '../../api/auth';
+import { ApiError } from '../../api/client';
 
 export default function BookerSignUpScreen() {
-  const { finishBookerSignUp, cancelSignUp, setSchoolName, setDepartmentName, setPosition, setRealName, setSchoolEmail } =
-    useAppState();
+  const {
+    finishBookerSignUp,
+    cancelSignUp,
+    setBookerId,
+    setSchoolName,
+    setDepartmentName,
+    setPosition,
+    setRealName,
+    setSchoolEmail,
+    setPhoneNumber,
+  } = useAppState();
 
   const [schoolName, setLocalSchoolName] = useState('');
   const [departmentName, setLocalDepartmentName] = useState('');
   const [position, setLocalPosition] = useState('');
   const [realName, setLocalRealName] = useState('');
+  const [phoneNumber, setLocalPhoneNumber] = useState('');
   const [schoolEmail, setLocalSchoolEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [allRequiredAgreed, setAllRequiredAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const isEmailValid = schoolEmail.includes('@') && schoolEmail.includes('.');
   const isCodeComplete = verificationCode.length === 6;
 
-  const handleSubmit = () => {
-    setSchoolName(schoolName);
-    setDepartmentName(departmentName);
-    setPosition(position);
-    setRealName(realName);
-    setSchoolEmail(schoolEmail);
-    finishBookerSignUp();
+  const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const booker = await signUpBooker({
+        schoolName,
+        departmentName,
+        position,
+        realName,
+        schoolEmail,
+        phoneNumber,
+      });
+      setBookerId(booker.id);
+      setSchoolName(schoolName);
+      setDepartmentName(departmentName);
+      setPosition(position);
+      setRealName(realName);
+      setSchoolEmail(schoolEmail);
+      setPhoneNumber(phoneNumber);
+      finishBookerSignUp();
+    } catch (e) {
+      const message = e instanceof ApiError ? e.message : '네트워크 연결을 확인해주세요.';
+      Alert.alert('가입에 실패했어요', message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -91,6 +124,16 @@ export default function BookerSignUpScreen() {
             <AppTextField placeholder="실명을 입력해주세요" value={realName} onChangeText={setLocalRealName} />
           </View>
 
+          <View style={styles.field}>
+            <FormLabel title="연락처" />
+            <AppTextField
+              placeholder="‘-’ 없이 숫자만 입력해주세요"
+              value={phoneNumber}
+              onChangeText={(text) => setLocalPhoneNumber(text.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+            />
+          </View>
+
           <View style={styles.divider} />
 
           <Text style={styles.sectionTitle}>신원 인증</Text>
@@ -138,10 +181,10 @@ export default function BookerSignUpScreen() {
 
       <View style={styles.footer}>
         <PrimaryFilledButton
-          title="가입 완료하기"
+          title={submitting ? '가입 처리 중...' : '가입 완료하기'}
           onPress={handleSubmit}
-          disabled={!allRequiredAgreed}
-          style={{ opacity: allRequiredAgreed ? 1 : 0.4 }}
+          disabled={!allRequiredAgreed || !phoneNumber || submitting}
+          style={{ opacity: allRequiredAgreed && phoneNumber && !submitting ? 1 : 0.4 }}
         />
       </View>
     </SafeAreaView>
