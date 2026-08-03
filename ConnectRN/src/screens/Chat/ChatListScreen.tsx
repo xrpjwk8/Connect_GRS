@@ -1,30 +1,53 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
-import { ownerStore } from '../../models/mockData';
+import { getMessages } from '../../api/chat';
 import type { ChatMessage, MyReservation } from '../../models/types';
 
 export default function ChatListScreen() {
   const navigation = useNavigation<any>();
-  const { selectedRole, myReservations, chatMessages } = useAppState();
+  const { selectedRole, myReservations, refreshReservations } = useAppState();
   const isOwner = selectedRole === 'owner';
+  const [lastMessages, setLastMessages] = useState<Record<string, ChatMessage>>({});
 
-  const threads = useMemo(() => {
-    const chattable = myReservations.filter((r) => r.status === 'confirmed' || r.status === 'pending');
-    return isOwner ? chattable.filter((r) => r.storeId === ownerStore.id) : chattable;
-  }, [myReservations, isOwner]);
+  useFocusEffect(
+    useCallback(() => {
+      refreshReservations();
+    }, [refreshReservations])
+  );
 
-  const lastMessageOf = (reservationId: string): ChatMessage | undefined => {
-    const list = chatMessages.filter((m) => m.reservationId === reservationId);
-    return list[list.length - 1];
-  };
+  const threads = useMemo(
+    () => myReservations.filter((r) => r.status === 'confirmed' || r.status === 'pending'),
+    [myReservations]
+  );
+
+  useEffect(() => {
+    Promise.all(
+      threads.map(async (t) => {
+        try {
+          const messages = await getMessages(t.id);
+          return [t.id, messages[messages.length - 1]] as const;
+        } catch {
+          return [t.id, undefined] as const;
+        }
+      })
+    ).then((entries) => {
+      const next: Record<string, ChatMessage> = {};
+      entries.forEach(([id, message]) => {
+        if (message) next[id] = message;
+      });
+      setLastMessages(next);
+    });
+  }, [threads]);
+
+  const lastMessageOf = (reservationId: string): ChatMessage | undefined => lastMessages[reservationId];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

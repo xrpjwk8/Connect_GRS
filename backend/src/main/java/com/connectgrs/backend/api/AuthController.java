@@ -6,9 +6,11 @@ import com.connectgrs.backend.domain.BookerProfile;
 import com.connectgrs.backend.domain.OwnerProfile;
 import com.connectgrs.backend.service.ConnectService;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -28,5 +30,15 @@ public class AuthController {
     @PostMapping("/owners")
     public OwnerProfile signUpOwner(@Valid @RequestBody OwnerSignUpRequest request) {
         return connectService.createOwner(request);
+    }
+
+    @GetMapping("/bookers/lookup")
+    public BookerProfile lookupBooker(@RequestParam String schoolEmail) {
+        return connectService.findBookerByEmail(schoolEmail);
+    }
+
+    @GetMapping("/owners/lookup")
+    public OwnerProfile lookupOwner(@RequestParam String contact) {
+        return connectService.findOwnerByContact(contact);
     }
 }

@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import type { ChatMessage, MyReservation, SearchFilter, UserRole } from '../models/types';
-import { allReservations as mockAllReservations, initialChatMessages } from '../models/mockData';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import type { MyReservation, SearchFilter, Store, UserRole } from '../models/types';
+import { getReservationsForBooker, getReservationsForOwner } from '../api/reservations';
 
 export type Route = 'onboarding' | 'bookerTabs' | 'ownerTabs';
 export type OnboardingDestination = 'bookerSignUp' | 'ownerSignUp' | 'bookerLogin' | 'ownerLogin';
@@ -9,6 +9,13 @@ interface AppStateValue {
   route: Route;
   onboardingPath: OnboardingDestination[];
   selectedRole: UserRole | null;
+
+  bookerId: string | null;
+  setBookerId: (v: string | null) => void;
+  ownerId: string | null;
+  setOwnerId: (v: string | null) => void;
+  ownerStoreInfo: Store | null;
+  setOwnerStoreInfo: (v: Store | null) => void;
 
   schoolName: string;
   setSchoolName: (v: string) => void;
@@ -33,10 +40,9 @@ interface AppStateValue {
 
   myReservations: MyReservation[];
   setMyReservations: (v: MyReservation[]) => void;
-
-  // 예약 건당 채팅 메시지. 예약금 계좌 공유·입금 확인 용도 (실제 송금은 앱 밖에서 진행)
-  chatMessages: ChatMessage[];
-  sendChatMessage: (reservationId: string, senderRole: UserRole, text: string) => void;
+  reservationsLoading: boolean;
+  // 백엔드에서 역할에 맞는 예약 목록을 다시 불러와 myReservations를 갱신
+  refreshReservations: () => Promise<void>;
 
   // 시간대별 잔여 좌석만큼 중복 예약을 받을지 여부 (점주 설정)
   capacityOverbookingEnabled: boolean;
@@ -80,6 +86,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [onboardingPath, setOnboardingPath] = useState<OnboardingDestination[]>([]);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
+  const [bookerId, setBookerId] = useState<string | null>(null);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [ownerStoreInfo, setOwnerStoreInfo] = useState<Store | null>(null);
+
   const [schoolName, setSchoolName] = useState('');
   const [departmentName, setDepartmentName] = useState('');
   const [position, setPosition] = useState('');
@@ -92,8 +102,30 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [selectedSearchDate, setSelectedSearchDate] = useState<Date | null>(null);
   const [lastSearchFilter, setLastSearchFilter] = useState<SearchFilter | null>(null);
 
-  const [myReservations, setMyReservations] = useState<MyReservation[]>(mockAllReservations);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
+  const [myReservations, setMyReservations] = useState<MyReservation[]>([]);
+  const [reservationsLoading, setReservationsLoading] = useState(false);
+
+  const refreshReservations = useCallback(async () => {
+    if (selectedRole === 'booker' && bookerId) {
+      setReservationsLoading(true);
+      try {
+        setMyReservations(await getReservationsForBooker(bookerId));
+      } catch (e) {
+        console.warn('Failed to refresh booker reservations', e);
+      } finally {
+        setReservationsLoading(false);
+      }
+    } else if (selectedRole === 'owner' && ownerId) {
+      setReservationsLoading(true);
+      try {
+        setMyReservations(await getReservationsForOwner(ownerId));
+      } catch (e) {
+        console.warn('Failed to refresh owner reservations', e);
+      } finally {
+        setReservationsLoading(false);
+      }
+    }
+  }, [selectedRole, bookerId, ownerId]);
 
   const [capacityOverbookingEnabled, setCapacityOverbookingEnabled] = useState(true);
   const [blockedSlotsByDate, setBlockedSlotsByDate] = useState<Record<string, string[]>>({});
@@ -109,6 +141,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       route,
       onboardingPath,
       selectedRole,
+      bookerId,
+      setBookerId,
+      ownerId,
+      setOwnerId,
+      ownerStoreInfo,
+      setOwnerStoreInfo,
       schoolName,
       setSchoolName,
       departmentName,
@@ -129,21 +167,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setLastSearchFilter,
       myReservations,
       setMyReservations,
-      chatMessages,
-      sendChatMessage: (reservationId: string, senderRole: UserRole, text: string) => {
-        const trimmed = text.trim();
-        if (!trimmed) return;
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            reservationId,
-            senderRole,
-            text: trimmed,
-            timeLabel: new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' }),
-          },
-        ]);
-      },
+      reservationsLoading,
+      refreshReservations,
       capacityOverbookingEnabled,
       setCapacityOverbookingEnabled,
       blockedSlotsByDate,
@@ -190,6 +215,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setSelectedRole(null);
         setRoute('onboarding');
         setOnboardingPath([]);
+        setBookerId(null);
+        setOwnerId(null);
+        setOwnerStoreInfo(null);
         setSchoolName('');
         setDepartmentName('');
         setPosition('');
@@ -199,6 +227,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setProfileImageUri(null);
         setSelectedSearchDate(null);
         setLastSearchFilter(null);
+        setMyReservations([]);
         setSelectedBookerTab(0);
       },
     }),
@@ -206,6 +235,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       route,
       onboardingPath,
       selectedRole,
+      bookerId,
+      ownerId,
+      ownerStoreInfo,
       schoolName,
       departmentName,
       position,
@@ -216,7 +248,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       selectedSearchDate,
       lastSearchFilter,
       myReservations,
-      chatMessages,
+      reservationsLoading,
+      refreshReservations,
       capacityOverbookingEnabled,
       blockedSlotsByDate,
       storePhotoWideUri,

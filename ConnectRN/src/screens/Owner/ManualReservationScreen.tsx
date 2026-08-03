@@ -7,7 +7,7 @@ import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
-import { defaultTimeSlots, ownerStore } from '../../models/mockData';
+import { defaultTimeSlots } from '../../models/mockData';
 import { useAppState } from '../../state/AppState';
 import { InfoBanner } from '../../components/CommonComponents';
 import { parseDateKey } from '../../utils/date';
@@ -33,7 +33,7 @@ function addThirtyMinutes(time: string): string {
 export default function ManualReservationScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { myReservations, setMyReservations } = useAppState();
+  const { myReservations, setMyReservations, ownerStoreInfo } = useAppState();
 
   const selectedDate = useMemo(
     () => (route.params?.dateKey ? parseDateKey(route.params.dateKey) : new Date()),
@@ -93,9 +93,9 @@ export default function ManualReservationScreen() {
     setMyReservations([
       {
         id: `manual-${Date.now()}`,
-        storeId: ownerStore.id,
-        storeName: ownerStore.name,
-        imageSymbol: ownerStore.imageName,
+        storeId: ownerStoreInfo?.id,
+        storeName: ownerStoreInfo?.name ?? '',
+        imageSymbol: ownerStoreInfo?.imageName ?? 'storefront-outline',
         status: 'confirmed',
         dateLabel,
         people: peopleNum,

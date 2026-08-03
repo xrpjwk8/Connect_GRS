@@ -1,13 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
-import { ownerStore } from '../../models/mockData';
 import { useAppState } from '../../state/AppState';
 import { PrimaryFilledButton } from '../../components/Buttons';
 import Card from '../../components/Card';
@@ -41,13 +40,16 @@ export default function ReservationCalendarScreen() {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [viewMonth, setViewMonth] = useState(startOfMonth(today));
   const [selectedDate, setSelectedDate] = useState(today);
-  const { myReservations, blockedSlotsByDate } = useAppState();
+  const { myReservations, blockedSlotsByDate, refreshReservations } = useAppState();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshReservations();
+    }, [refreshReservations])
+  );
 
   const storeReservations = useMemo(
-    () =>
-      myReservations.filter(
-        (r) => r.storeId === ownerStore.id && (r.status === 'confirmed' || r.status === 'pending')
-      ),
+    () => myReservations.filter((r) => r.status === 'confirmed' || r.status === 'pending'),
     [myReservations]
   );
 

@@ -8,13 +8,14 @@ import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
-import { categories } from '../../models/mockData';
+import { useFilterMetadata } from '../../hooks/useFilterMetadata';
 import { ChipButton } from '../../components/CommonComponents';
 import type { SearchFilter } from '../../models/types';
 
 export default function BookerHomeScreen() {
   const navigation = useNavigation<any>();
   const { schoolName, setLastSearchFilter, setSelectedSearchDate } = useAppState();
+  const { categories } = useFilterMetadata();
   const [selectedCategory, setSelectedCategory] = useState('전체');
 
   const locationLabel = schoolName.trim() ? `신촌 · ${schoolName.trim()}` : '신촌';

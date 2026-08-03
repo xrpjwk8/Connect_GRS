@@ -10,6 +10,7 @@ import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { GhostButton, LimeButton } from '../../components/Buttons';
+import { updateReservation } from '../../api/reservations';
 
 const TIME_ROWS: string[][] = [
   ['17:00', '17:30', '18:00', '18:30'],
@@ -19,7 +20,6 @@ const TIME_ROWS: string[][] = [
 ];
 const MAX_CONSECUTIVE_SLOTS = 6;
 const ALL_TIMES = TIME_ROWS.flat().filter((t) => t !== '');
-const WEEKDAY_LETTERS = ['일', '월', '화', '수', '목', '금', '토'];
 
 function addThirtyMinutes(timeString: string): string {
   const [hourStr, minuteStr] = timeString.split(':');
@@ -42,7 +42,7 @@ export default function ReservationEditScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const reservationId: string = route.params.reservationId;
-  const { myReservations, setMyReservations } = useAppState();
+  const { myReservations, refreshReservations } = useAppState();
 
   const currentReservation = useMemo(
     () => myReservations.find((r) => r.id === reservationId),
@@ -56,6 +56,7 @@ export default function ReservationEditScreen() {
   const [budgetText, setBudgetText] = useState('');
   const [eventPurpose, setEventPurpose] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!currentReservation) return;
@@ -118,32 +119,31 @@ export default function ReservationEditScreen() {
     ]);
   };
 
-  const submitSave = (peopleNum: number) => {
+  const submitSave = async (peopleNum: number) => {
     const sorted = [...selectedTimes].sort((a, b) => ALL_TIMES.indexOf(a) - ALL_TIMES.indexOf(b));
-    const timeLabel =
-      sorted.length === 1 ? sorted[0] : `${sorted[0]} ~ ${addThirtyMinutes(sorted[sorted.length - 1])}`;
-    const dateLabel = `${date.getMonth() + 1}/${date.getDate()} (${WEEKDAY_LETTERS[date.getDay()]}) ${timeLabel}`;
+    const isoDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+      date.getDate()
+    ).padStart(2, '0')}`;
 
-    setMyReservations(
-      myReservations.map((r) =>
-        r.id === reservationId
-          ? {
-              ...r,
-              dateLabel,
-              people: peopleNum,
-              budget: budgetText ? Number(budgetText) : undefined,
-              dateValue: date,
-              timeLabels: sorted,
-              eventPurpose,
-              requestMessage,
-            }
-          : r
-      )
-    );
-
-    Alert.alert('변경 사항이 저장되었습니다', "'내 예약' 목록에서 변경된 정보를 확인할 수 있어요.", [
-      { text: '확인', onPress: () => navigation.goBack() },
-    ]);
+    setSaving(true);
+    try {
+      await updateReservation(reservationId, {
+        date: isoDate,
+        timeSlots: sorted.map((t) => `${t}:00`),
+        people: peopleNum,
+        budgetPerPerson: budgetText ? Number(budgetText) : undefined,
+        eventPurpose,
+        requestMessage,
+      });
+      await refreshReservations();
+      Alert.alert('변경 사항이 저장되었습니다', "'내 예약' 목록에서 변경된 정보를 확인할 수 있어요.", [
+        { text: '확인', onPress: () => navigation.goBack() },
+      ]);
+    } catch (e) {
+      Alert.alert('저장에 실패했어요', '네트워크 연결을 확인해주세요.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -292,7 +292,12 @@ export default function ReservationEditScreen() {
 
       <View style={styles.bottomBar}>
         <GhostButton title="취소" style={{ flex: 1 }} onPress={() => navigation.goBack()} />
-        <LimeButton title="변경 저장" style={{ flex: 1, borderRadius: AppRadius.lg }} onPress={handleSave} />
+        <LimeButton
+          title={saving ? '저장 중...' : '변경 저장'}
+          style={{ flex: 1, borderRadius: AppRadius.lg }}
+          onPress={handleSave}
+          disabled={saving}
+        />
       </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

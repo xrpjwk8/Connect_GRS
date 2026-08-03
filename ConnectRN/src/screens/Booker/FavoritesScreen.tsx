@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,13 +7,24 @@ import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
-import { favorites } from '../../models/mockData';
+import { useAppState } from '../../state/AppState';
+import { getFavorites } from '../../api/stores';
 import { RatingView } from '../../components/CommonComponents';
 import Card from '../../components/Card';
 import type { Store } from '../../models/types';
 
 export default function FavoritesScreen() {
   const navigation = useNavigation<any>();
+  const { bookerId } = useAppState();
+  const [favorites, setFavorites] = useState<Store[]>([]);
+
+  useEffect(() => {
+    if (!bookerId) return;
+    getFavorites(bookerId)
+      .then(setFavorites)
+      .catch((e) => console.warn('Failed to load favorites', e));
+  }, [bookerId]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.titleBar}>

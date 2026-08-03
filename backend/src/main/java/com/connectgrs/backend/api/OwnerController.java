@@ -36,6 +36,14 @@ public class OwnerController {
         return connectService.getOwnerDashboard(ownerId);
     }
 
+    @GetMapping("/reservations")
+    public List<ReservationResponse> getReservations(
+            @PathVariable UUID ownerId,
+            @RequestParam(required = false) String statusGroup
+    ) {
+        return connectService.getReservationsForOwner(ownerId, statusGroup);
+    }
+
     @PostMapping("/reservations/{reservationId}/approve")
     public ReservationResponse approve(@PathVariable UUID ownerId, @PathVariable UUID reservationId) {
         return connectService.updateReservationStatus(ownerId, reservationId, ReservationStatus.CONFIRMED);

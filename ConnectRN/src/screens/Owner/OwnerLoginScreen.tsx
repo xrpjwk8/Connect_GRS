@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
@@ -8,16 +8,39 @@ import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { AppTextField, FormLabel } from '../../components/CommonComponents';
 import { LimeButton } from '../../components/Buttons';
+import { lookupOwnerByContact } from '../../api/auth';
+import { getStore } from '../../api/stores';
+import { ApiError } from '../../api/client';
 
 export default function OwnerLoginScreen() {
-  const { finishOwnerSignUp, cancelSignUp } = useAppState();
+  const { finishOwnerSignUp, cancelSignUp, setOwnerId, setOwnerStoreInfo } = useAppState();
 
   const [contact, setContact] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const isContactValid = contact.length >= 10;
   const isCodeComplete = verificationCode.length === 6;
+
+  const handleLogin = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const owner = await lookupOwnerByContact(contact);
+      setOwnerId(owner.id);
+      setOwnerStoreInfo(await getStore(owner.storeId));
+      finishOwnerSignUp();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) {
+        Alert.alert('가입 정보를 찾을 수 없어요', '해당 연락처로 가입된 매장이 없어요. 회원가입을 먼저 진행해주세요.');
+      } else {
+        Alert.alert('로그인에 실패했어요', '네트워크 연결을 확인해주세요.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -71,7 +94,11 @@ export default function OwnerLoginScreen() {
       </KeyboardAvoidingView>
 
       <View style={styles.footer}>
-        <LimeButton title="로그인하기" onPress={finishOwnerSignUp} disabled={!isCodeComplete} />
+        <LimeButton
+          title={submitting ? '로그인 중...' : '로그인하기'}
+          onPress={handleLogin}
+          disabled={!isCodeComplete || submitting}
+        />
       </View>
     </SafeAreaView>
   );

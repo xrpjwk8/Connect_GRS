@@ -1,7 +1,12 @@
 package com.connectgrs.backend.service;
 
+import com.connectgrs.backend.api.dto.AdminStatsResponse;
+import com.connectgrs.backend.api.dto.AdminStoreResponse;
 import com.connectgrs.backend.api.dto.AvailabilityResponse;
 import com.connectgrs.backend.api.dto.BookerSignUpRequest;
+import com.connectgrs.backend.api.dto.ChatMessageCreateRequest;
+import com.connectgrs.backend.api.dto.ChatMessageResponse;
+import com.connectgrs.backend.api.dto.DeviceRegisterRequest;
 import com.connectgrs.backend.api.dto.FilterMetadataResponse;
 import com.connectgrs.backend.api.dto.OwnerDashboardResponse;
 import com.connectgrs.backend.api.dto.OwnerSignUpRequest;
@@ -11,6 +16,8 @@ import com.connectgrs.backend.api.dto.ReservationUpdateRequest;
 import com.connectgrs.backend.api.dto.StoreSummaryResponse;
 import com.connectgrs.backend.api.dto.TimeBlockUpdateRequest;
 import com.connectgrs.backend.domain.BookerProfile;
+import com.connectgrs.backend.domain.ChatMessage;
+import com.connectgrs.backend.domain.DeviceToken;
 import com.connectgrs.backend.domain.OwnerProfile;
 import com.connectgrs.backend.domain.Reservation;
 import com.connectgrs.backend.domain.ReservationStatus;
@@ -48,6 +55,14 @@ public class ConnectService {
     private final Map<UUID, Reservation> reservations = new ConcurrentHashMap<>();
     private final Map<UUID, Set<UUID>> favoritesByBooker = new ConcurrentHashMap<>();
     private final Map<UUID, List<TimeBlock>> blocksByOwner = new ConcurrentHashMap<>();
+    private final Map<UUID, List<ChatMessage>> messagesByReservation = new ConcurrentHashMap<>();
+    private final Map<UUID, String> deviceTokensByUser = new ConcurrentHashMap<>();
+
+    private final PushNotificationService pushNotificationService;
+
+    public ConnectService(PushNotificationService pushNotificationService) {
+        this.pushNotificationService = pushNotificationService;
+    }
 
     private final List<String> regions = List.of("신촌", "홍대", "건대", "이태원");
     private final List<String> categories = List.of("전체", "주점", "고깃집", "파티룸", "카페", "일식");
@@ -293,6 +308,12 @@ public class ConnectService {
                 LocalDateTime.now()
         );
         reservations.put(reservation.id(), reservation);
+        sendPush(
+                store.ownerId(),
+                "새 예약 신청이 도착했어요",
+                booker.realName() + "님이 " + store.name() + "에 예약을 신청했어요.",
+                Map.of("type", "reservation_request", "reservationId", reservation.id().toString())
+        );
         return ReservationResponse.from(reservation, store);
     }
 
@@ -300,6 +321,16 @@ public class ConnectService {
         ensureBooker(bookerId);
         return reservations.values().stream()
                 .filter(reservation -> reservation.bookerId().equals(bookerId))
+                .filter(reservation -> matchesGroup(reservation.status(), statusGroup))
+                .sorted(Comparator.comparing(Reservation::date).reversed())
+                .map(this::toReservationResponse)
+                .toList();
+    }
+
+    public List<ReservationResponse> getReservationsForOwner(UUID ownerId, String statusGroup) {
+        ensureOwner(ownerId);
+        return reservations.values().stream()
+                .filter(reservation -> reservation.ownerId().equals(ownerId))
                 .filter(reservation -> matchesGroup(reservation.status(), statusGroup))
                 .sorted(Comparator.comparing(Reservation::date).reversed())
                 .map(this::toReservationResponse)
@@ -384,6 +415,16 @@ public class ConnectService {
         if (!current.ownerId().equals(ownerId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reservation does not belong to this owner.");
         }
+        return applyReservationStatus(current, status);
+    }
+
+    /** 관리자 화면용: 소유자 검증 없이 어떤 예약이든 상태를 바꿀 수 있음. */
+    public ReservationResponse adminUpdateReservationStatus(UUID reservationId, ReservationStatus status) {
+        Reservation current = getReservationEntity(reservationId);
+        return applyReservationStatus(current, status);
+    }
+
+    private ReservationResponse applyReservationStatus(Reservation current, ReservationStatus status) {
         Reservation updated = new Reservation(
                 current.id(), current.storeId(), current.ownerId(), current.bookerId(),
                 current.bookerName(), current.bookerAffiliation(), current.date(), current.timeSlots(),
@@ -391,7 +432,106 @@ public class ConnectService {
                 status, current.createdAt()
         );
         reservations.put(updated.id(), updated);
+        if (status == ReservationStatus.CONFIRMED) {
+            Store store = getStoreEntity(updated.storeId());
+            sendPush(
+                    updated.bookerId(),
+                    "예약이 수락됐어요",
+                    store.name() + " 예약이 확정됐어요.",
+                    Map.of("type", "reservation_confirmed", "reservationId", updated.id().toString())
+            );
+        }
         return toReservationResponse(updated);
+    }
+
+    public List<AdminStoreResponse> getAllStoresForAdmin() {
+        return stores.values().stream()
+                .sorted(Comparator.comparing(Store::name))
+                .map(store -> {
+                    OwnerProfile owner = owners.get(store.ownerId());
+                    return AdminStoreResponse.from(store, owner == null ? "-" : owner.ownerName());
+                })
+                .toList();
+    }
+
+    public List<OwnerProfile> getAllOwners() {
+        return owners.values().stream().sorted(Comparator.comparing(OwnerProfile::storeName)).toList();
+    }
+
+    public List<BookerProfile> getAllBookers() {
+        return bookers.values().stream().sorted(Comparator.comparing(BookerProfile::realName)).toList();
+    }
+
+    public List<ReservationResponse> getAllReservationsForAdmin(String statusGroup) {
+        return reservations.values().stream()
+                .filter(reservation -> matchesGroup(reservation.status(), statusGroup))
+                .sorted(Comparator.comparing(Reservation::createdAt).reversed())
+                .map(this::toReservationResponse)
+                .toList();
+    }
+
+    public AdminStatsResponse getAdminStats() {
+        int pending = 0;
+        int confirmed = 0;
+        for (Reservation reservation : reservations.values()) {
+            if (reservation.status() == ReservationStatus.PENDING) pending++;
+            if (reservation.status() == ReservationStatus.CONFIRMED) confirmed++;
+        }
+        return new AdminStatsResponse(
+                stores.size(),
+                owners.size(),
+                bookers.size(),
+                reservations.size(),
+                pending,
+                confirmed,
+                deviceTokensByUser.size()
+        );
+    }
+
+    public List<ChatMessageResponse> getMessages(UUID reservationId) {
+        getReservationEntity(reservationId);
+        return messagesByReservation.getOrDefault(reservationId, List.of()).stream()
+                .map(ChatMessageResponse::from)
+                .toList();
+    }
+
+    public ChatMessageResponse postMessage(UUID reservationId, ChatMessageCreateRequest request) {
+        getReservationEntity(reservationId);
+        ChatMessage message = new ChatMessage(
+                UUID.randomUUID(),
+                reservationId,
+                request.senderId(),
+                request.senderRole(),
+                request.text().trim(),
+                LocalDateTime.now()
+        );
+        messagesByReservation.computeIfAbsent(reservationId, unused -> new ArrayList<>()).add(message);
+        return ChatMessageResponse.from(message);
+    }
+
+    public void registerDevice(DeviceRegisterRequest request) {
+        deviceTokensByUser.put(request.userId(), request.expoPushToken());
+    }
+
+    public BookerProfile findBookerByEmail(String schoolEmail) {
+        return bookers.values().stream()
+                .filter(booker -> booker.schoolEmail().equalsIgnoreCase(schoolEmail))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booker not found."));
+    }
+
+    public OwnerProfile findOwnerByContact(String contact) {
+        return owners.values().stream()
+                .filter(owner -> owner.contact().equals(contact))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Owner not found."));
+    }
+
+    private void sendPush(UUID userId, String title, String body, Map<String, Object> data) {
+        String token = deviceTokensByUser.get(userId);
+        if (token != null) {
+            pushNotificationService.send(token, title, body, data);
+        }
     }
 
     public Map<LocalDate, List<String>> getCalendar(UUID ownerId, UUID storeId, YearMonth yearMonth) {

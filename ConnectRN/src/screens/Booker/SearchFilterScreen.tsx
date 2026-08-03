@@ -8,7 +8,7 @@ import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
-import { regions, timeOptions } from '../../models/mockData';
+import { useFilterMetadata } from '../../hooks/useFilterMetadata';
 import type { SearchFilter } from '../../models/types';
 
 const AVAILABLE_REGION = '신촌';
@@ -26,6 +26,7 @@ export default function SearchFilterScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const onApply: ((filter: SearchFilter) => void) | undefined = route.params?.onApply;
+  const { regions, timeOptions } = useFilterMetadata();
 
   const [region, setRegion] = useState(DEFAULT_REGION);
   const [date, setDate] = useState(new Date());

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: connect-grs-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/meta/filters
+    envVars:
+      - key: PORT
+        value: 8080
