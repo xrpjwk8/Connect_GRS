@@ -39,6 +39,9 @@ export default function SearchResultsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+          <Ionicons name="chevron-back" size={20} color={AppColors.ink} />
+        </Pressable>
         <View style={styles.headerLeft}>
           <Ionicons name="search-outline" size={14} color={AppColors.inkSecondary} />
           <Text style={styles.headerText} numberOfLines={1}>
@@ -74,7 +77,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: AppColors.borderStrong,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: AppSpacing.s6, flex: 1, marginRight: AppSpacing.s12 },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: AppSpacing.s6,
+    flex: 1,
+    marginLeft: AppSpacing.s12,
+    marginRight: AppSpacing.s12,
+  },
   headerText: { ...Typography.bodyLG, color: AppColors.ink, flexShrink: 1 },
   scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s12 },
   resultsTitle: { ...Typography.headlineMD, color: AppColors.ink, paddingTop: AppSpacing.s8 },

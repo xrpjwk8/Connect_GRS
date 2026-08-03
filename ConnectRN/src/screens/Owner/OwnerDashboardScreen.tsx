@@ -50,7 +50,7 @@ export default function OwnerDashboardScreen() {
 
         <View style={styles.storeRow}>
           <Ionicons name="storefront-outline" size={16} color={AppColors.inkSecondary} />
-          <Text style={styles.storeRowText}>[홍대] 캠퍼스 포차</Text>
+          <Text style={styles.storeRowText}>{`[${ownerStore.location}] ${ownerStore.name}`}</Text>
         </View>
 
         <View style={styles.sectionTitleRow}>

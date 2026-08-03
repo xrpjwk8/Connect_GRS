@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../theme/colors';
 
@@ -95,12 +96,16 @@ export default function BookerTabNavigator() {
       <Tab.Screen
         name="ChatTab"
         component={ChatStackNavigator}
-        options={{
+        options={({ route }) => ({
           title: '채팅',
           tabBarIcon: ({ focused }) => (
             <TabIcon outline="chatbubble-outline" filled="chatbubble" focused={focused} />
           ),
-        }}
+          tabBarStyle:
+            getFocusedRouteNameFromRoute(route) === 'Chat'
+              ? { display: 'none' }
+              : { backgroundColor: AppColors.white },
+        })}
       />
       <Tab.Screen
         name="MyReservationsTab"

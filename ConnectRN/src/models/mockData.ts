@@ -15,6 +15,14 @@ function dayOffset(offsetDays: number, hour: number, minute = 0): Date {
   return d;
 }
 
+const MOCK_WEEKDAY_LETTERS = ['일', '월', '화', '수', '목', '금', '토'];
+
+// dayOffset()이 "오늘" 기준으로 날짜를 계산하므로, 라벨도 하드코딩 대신 같은 Date에서 뽑아야
+// 실제 실행 시점(예: 8월)과 어긋나지 않음.
+function dateLabelOf(d: Date, suffix: string = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`): string {
+  return `${d.getMonth() + 1}/${d.getDate()} (${MOCK_WEEKDAY_LETTERS[d.getDay()]}) ${suffix}`;
+}
+
 export const regions = ['신촌', '왕십리', '건대', '혜화'];
 export const categories = ['전체', '술집', '고깃집', '파티룸', '카페'];
 export const timeOptions = [
@@ -73,9 +81,9 @@ export const ownerStore: Store = {
   maxCapacity: 45,
   pricePerPerson: 18000,
   acceptanceRate: 94,
-  location: '홍대',
+  location: '신촌',
   imageName: 'beer-outline',
-  keywords: ['단체 환영', '홍대입구역 도보 3분'],
+  keywords: ['단체 환영', '신촌역 도보 3분'],
   isFavorite: false,
 };
 
@@ -162,7 +170,7 @@ export const activeReservations: MyReservation[] = [
     storeName: '이자카야 모리',
     imageSymbol: 'wine-outline',
     status: 'confirmed',
-    dateLabel: '5/25 (일) 19:00',
+    dateLabel: dateLabelOf(dayOffset(1, 19)),
     people: 18,
     budget: 25000,
     dateValue: dayOffset(1, 19),
@@ -175,7 +183,7 @@ export const activeReservations: MyReservation[] = [
     storeName: '구이구이 정육식당',
     imageSymbol: 'flame-outline',
     status: 'pending',
-    dateLabel: '5/27 (화) 18:30',
+    dateLabel: dateLabelOf(dayOffset(3, 18, 30)),
     people: 24,
     dateValue: dayOffset(3, 18, 30),
     timeLabels: [],
@@ -220,7 +228,7 @@ export const allReservations: MyReservation[] = [
     storeName: ownerStore.name,
     imageSymbol: ownerStore.imageName,
     status: 'confirmed',
-    dateLabel: '6/3 (화) 19:00',
+    dateLabel: dateLabelOf(dayOffset(5, 19)),
     people: 20,
     budget: 10000,
     dateValue: dayOffset(5, 19),
@@ -235,7 +243,7 @@ export const allReservations: MyReservation[] = [
     storeName: '이자카야 모리',
     imageSymbol: 'wine-outline',
     status: 'confirmed',
-    dateLabel: '5/25 (일) 19:00',
+    dateLabel: dateLabelOf(dayOffset(1, 19)),
     people: 18,
     budget: 25000,
     dateValue: dayOffset(1, 19),
@@ -248,7 +256,7 @@ export const allReservations: MyReservation[] = [
     storeName: '구이구이 정육식당',
     imageSymbol: 'flame-outline',
     status: 'pending',
-    dateLabel: '5/27 (화) 18:30',
+    dateLabel: dateLabelOf(dayOffset(3, 18, 30)),
     people: 24,
     dateValue: dayOffset(3, 18, 30),
     timeLabels: [],
@@ -260,7 +268,7 @@ export const allReservations: MyReservation[] = [
     storeName: '스페이스 아지트',
     imageSymbol: 'sparkles-outline',
     status: 'pending',
-    dateLabel: '6/1 (일) 20:00',
+    dateLabel: dateLabelOf(dayOffset(8, 20)),
     people: 15,
     budget: 20000,
     dateValue: dayOffset(8, 20),
@@ -273,7 +281,7 @@ export const allReservations: MyReservation[] = [
     storeName: '맥주창고 강남점',
     imageSymbol: 'beer-outline',
     status: 'completed',
-    dateLabel: '5/10 (금) 19:00',
+    dateLabel: dateLabelOf(dayOffset(-14, 19)),
     people: 12,
     budget: 18000,
     dateValue: dayOffset(-14, 19),
@@ -286,7 +294,7 @@ export const allReservations: MyReservation[] = [
     storeName: '카페 드 로스터리',
     imageSymbol: 'cafe-outline',
     status: 'completed',
-    dateLabel: '4/28 (일) 18:00',
+    dateLabel: dateLabelOf(dayOffset(-26, 18)),
     people: 8,
     budget: 15000,
     dateValue: dayOffset(-26, 18),
@@ -299,7 +307,7 @@ export const allReservations: MyReservation[] = [
     storeName: '수지상회 신촌점',
     imageSymbol: 'wine-outline',
     status: 'cancelled',
-    dateLabel: '5/15 (수) 19:00',
+    dateLabel: dateLabelOf(dayOffset(-9, 19)),
     people: 10,
     budget: 25000,
     dateValue: dayOffset(-9, 19),
@@ -312,7 +320,7 @@ export const allReservations: MyReservation[] = [
     storeName: '신촌 현명포차',
     imageSymbol: 'musical-notes-outline',
     status: 'rejected',
-    dateLabel: '5/12 (월) 20:00',
+    dateLabel: dateLabelOf(dayOffset(-12, 20)),
     people: 20,
     dateValue: dayOffset(-12, 20),
     timeLabels: [],
