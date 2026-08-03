@@ -137,7 +137,7 @@
 <header>
   <h1>Connect GRS 관리자</h1>
   <span class="spacer"></span>
-  <input id="baseUrl" value="http://localhost:8080" />
+  <input id="baseUrl" value="http://localhost:8080" onchange="localStorage.setItem('connectGrsAdminBaseUrl', this.value)" />
   <span id="healthStatus" class="status-dot">연결 확인 중...</span>
   <button class="btn" onclick="refreshAll()">전체 새로고침</button>
 </header>
@@ -367,6 +367,9 @@ async function refreshAll() {
   await loadStats();
   await loadCurrentTab();
 }
+
+const savedBaseUrl = localStorage.getItem('connectGrsAdminBaseUrl');
+if (savedBaseUrl) document.getElementById('baseUrl').value = savedBaseUrl;
 
 refreshAll();
 </script>
