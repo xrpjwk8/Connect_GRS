@@ -139,7 +139,6 @@ export default function TimeBlockScreen() {
       </ScrollView>
 
       <Pressable style={styles.saveButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="download-outline" size={18} color={AppColors.white} />
         <Text style={styles.saveButtonText}>변경사항 저장</Text>
       </Pressable>
     </SafeAreaView>

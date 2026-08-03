@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,7 +9,7 @@ import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { defaultTimeSlots, ownerStore } from '../../models/mockData';
 import { useAppState } from '../../state/AppState';
-import { InfoBanner } from '../../components/CommonComponents';
+import { FormLabel, InfoBanner } from '../../components/CommonComponents';
 import { parseDateKey } from '../../utils/date';
 
 const WEEKDAY_LETTERS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -45,6 +45,7 @@ export default function ManualReservationScreen() {
   const [peopleText, setPeopleText] = useState('');
   const [bookerLabel, setBookerLabel] = useState('');
   const [memo, setMemo] = useState('');
+  const peopleInputRef = useRef<TextInput>(null);
 
   const toggleTime = (t: string) => {
     const idx = OPEN_STARTS.indexOf(t);
@@ -83,6 +84,10 @@ export default function ManualReservationScreen() {
     const peopleNum = Number(peopleText) || 0;
     if (peopleNum < 1) {
       Alert.alert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
+      return;
+    }
+    if (!bookerLabel.trim()) {
+      Alert.alert('입력을 확인해주세요', '예약자 / 단체명을 입력해주세요.');
       return;
     }
 
@@ -165,9 +170,10 @@ export default function ManualReservationScreen() {
 
         <View style={styles.field}>
           <Text style={styles.fieldTitle}>인원</Text>
-          <View style={styles.inputBox}>
+          <Pressable style={styles.inputBox} onPress={() => peopleInputRef.current?.focus()}>
             <Ionicons name="people" size={18} color={AppColors.inkSecondary} />
             <TextInput
+              ref={peopleInputRef}
               style={styles.peopleInput}
               value={peopleText}
               onChangeText={(text) => setPeopleText(text.replace(/[^0-9]/g, ''))}
@@ -176,11 +182,11 @@ export default function ManualReservationScreen() {
             />
             <View style={{ flex: 1 }} />
             <Text style={styles.inputSuffix}>명</Text>
-          </View>
+          </Pressable>
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.fieldTitle}>예약자 / 단체명 (선택)</Text>
+          <FormLabel title="예약자 / 단체명" required />
           <View style={styles.inputBox}>
             <TextInput
               style={styles.textInput}

@@ -190,6 +190,9 @@ export default function StoreDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.headerImage}>
           <Ionicons name={store.imageName as any} size={48} color="rgba(255,255,255,0.45)" />
+          <Pressable style={styles.backBadge} onPress={() => navigation.goBack()} hitSlop={8}>
+            <Ionicons name="chevron-back" size={20} color={AppColors.white} />
+          </Pressable>
           <View style={styles.headerActions}>
             <Pressable style={styles.iconBadge} onPress={() => setIsFavorite(!isFavorite)}>
               <Ionicons
@@ -418,6 +421,14 @@ const styles = StyleSheet.create({
     right: 14,
     flexDirection: 'row',
     gap: AppSpacing.s10,
+  },
+  backBadge: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    padding: AppSpacing.s10,
+    borderRadius: AppRadius.pill,
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   iconBadge: {
     padding: AppSpacing.s10,
