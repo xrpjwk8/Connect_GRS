@@ -32,3 +32,11 @@ export function lookupBookerByEmail(schoolEmail: string): Promise<BookerProfileD
 export function lookupOwnerByContact(contact: string): Promise<OwnerProfileDto> {
   return apiClient.get<OwnerProfileDto>('/api/auth/owners/lookup', { contact });
 }
+
+export function sendVerificationCode(email: string): Promise<void> {
+  return apiClient.post<void>('/api/auth/verification-code', { email });
+}
+
+export function confirmVerificationCode(email: string, code: string): Promise<void> {
+  return apiClient.post<void>('/api/auth/verification-code/confirm', { email, code });
+}

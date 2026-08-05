@@ -9,7 +9,7 @@ import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { AppTextField, FormLabel } from '../../components/CommonComponents';
 import { LimeButton } from '../../components/Buttons';
-import { lookupBookerByEmail } from '../../api/auth';
+import { confirmVerificationCode, lookupBookerByEmail, sendVerificationCode } from '../../api/auth';
 import { ApiError } from '../../api/client';
 
 export default function BookerLoginScreen() {
@@ -19,15 +19,35 @@ export default function BookerLoginScreen() {
   const [schoolEmail, setLocalSchoolEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [codeSent, setCodeSent] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const isEmailValid = schoolEmail.includes('@') && schoolEmail.includes('.');
   const isCodeComplete = verificationCode.length === 6;
 
+  const handleSendCode = async () => {
+    if (sendingCode || !isEmailValid) return;
+    setSendingCode(true);
+    try {
+      await sendVerificationCode(schoolEmail);
+      setCodeSent(true);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) {
+        showAlert('가입 정보를 찾을 수 없어요', '해당 학교 메일로 가입된 계정이 없어요. 회원가입을 먼저 진행해주세요.');
+      } else {
+        const message = e instanceof ApiError ? e.message : '네트워크 연결을 확인해주세요.';
+        showAlert('인증번호 발송에 실패했어요', message);
+      }
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
   const handleLogin = async () => {
     if (submitting) return;
     setSubmitting(true);
     try {
+      await confirmVerificationCode(schoolEmail, verificationCode);
       const booker = await lookupBookerByEmail(schoolEmail);
       setBookerId(booker.id);
       setSchoolName(booker.schoolName);
@@ -40,6 +60,8 @@ export default function BookerLoginScreen() {
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
         showAlert('가입 정보를 찾을 수 없어요', '해당 학교 메일로 가입된 계정이 없어요. 회원가입을 먼저 진행해주세요.');
+      } else if (e instanceof ApiError && e.status === 400) {
+        showAlert('로그인에 실패했어요', e.message);
       } else {
         showAlert('로그인에 실패했어요', '네트워크 연결을 확인해주세요.');
       }
@@ -78,14 +100,14 @@ export default function BookerLoginScreen() {
                 />
               </View>
               <Pressable
-                disabled={!isEmailValid}
+                disabled={!isEmailValid || sendingCode}
                 style={[styles.sideButton, styles.sideButtonNeutral]}
-                onPress={() => setCodeSent(true)}
+                onPress={handleSendCode}
               >
-                <Text style={styles.sideButtonNeutralText}>인증 요청</Text>
+                <Text style={styles.sideButtonNeutralText}>{sendingCode ? '발송 중...' : codeSent ? '재발송' : '인증 요청'}</Text>
               </Pressable>
             </View>
-            {codeSent && <Text style={styles.hintText}>인증코드를 보냈어요 (데모: 아무 6자리 숫자 입력)</Text>}
+            {codeSent && <Text style={styles.hintText}>입력하신 메일로 인증코드를 보냈어요.</Text>}
           </View>
 
           <View style={styles.field}>

@@ -19,7 +19,7 @@ import { universities } from '../../models/mockData';
 import { AppTextField, FormLabel, PickerField } from '../../components/CommonComponents';
 import { PrimaryFilledButton } from '../../components/Buttons';
 import AgreementSection from '../../components/AgreementSection';
-import { signUpBooker } from '../../api/auth';
+import { confirmVerificationCode, sendVerificationCode, signUpBooker } from '../../api/auth';
 import { ApiError } from '../../api/client';
 
 export default function BookerSignUpScreen() {
@@ -44,9 +44,43 @@ export default function BookerSignUpScreen() {
   const [verificationCode, setVerificationCode] = useState('');
   const [allRequiredAgreed, setAllRequiredAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [confirmingCode, setConfirmingCode] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   const isEmailValid = schoolEmail.includes('@') && schoolEmail.includes('.');
   const isCodeComplete = verificationCode.length === 6;
+
+  const handleSendCode = async () => {
+    if (sendingCode || !isEmailValid) return;
+    setSendingCode(true);
+    try {
+      await sendVerificationCode(schoolEmail);
+      setCodeSent(true);
+      setEmailVerified(false);
+      showAlert('인증번호를 보냈어요', `${schoolEmail}로 발송된 6자리 코드를 입력해주세요.`);
+    } catch (e) {
+      const message = e instanceof ApiError ? e.message : '네트워크 연결을 확인해주세요.';
+      showAlert('인증번호 발송에 실패했어요', message);
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const handleConfirmCode = async () => {
+    if (confirmingCode || !isCodeComplete) return;
+    setConfirmingCode(true);
+    try {
+      await confirmVerificationCode(schoolEmail, verificationCode);
+      setEmailVerified(true);
+    } catch (e) {
+      const message = e instanceof ApiError ? e.message : '네트워크 연결을 확인해주세요.';
+      showAlert('인증에 실패했어요', message);
+    } finally {
+      setConfirmingCode(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (submitting) return;
@@ -145,13 +179,21 @@ export default function BookerSignUpScreen() {
                 <AppTextField
                   placeholder="example@university.ac.kr"
                   value={schoolEmail}
-                  onChangeText={setLocalSchoolEmail}
+                  onChangeText={(text) => {
+                    setLocalSchoolEmail(text);
+                    setEmailVerified(false);
+                    setCodeSent(false);
+                  }}
                   autoCapitalize="none"
                   keyboardType="email-address"
                 />
               </View>
-              <Pressable disabled={!isEmailValid} style={[styles.sideButton, styles.sideButtonNeutral]}>
-                <Text style={styles.sideButtonNeutralText}>인증 요청</Text>
+              <Pressable
+                disabled={!isEmailValid || sendingCode}
+                style={[styles.sideButton, styles.sideButtonNeutral]}
+                onPress={handleSendCode}
+              >
+                <Text style={styles.sideButtonNeutralText}>{sendingCode ? '발송 중...' : codeSent ? '재발송' : '인증 요청'}</Text>
               </Pressable>
             </View>
           </View>
@@ -165,10 +207,17 @@ export default function BookerSignUpScreen() {
                   value={verificationCode}
                   onChangeText={(text) => setVerificationCode(text.replace(/[^0-9]/g, '').slice(0, 6))}
                   keyboardType="number-pad"
+                  editable={!emailVerified}
                 />
               </View>
-              <Pressable disabled={!isCodeComplete} style={[styles.sideButton, styles.sideButtonDark]}>
-                <Text style={styles.sideButtonDarkText}>확인</Text>
+              <Pressable
+                disabled={!isCodeComplete || confirmingCode || emailVerified}
+                style={[styles.sideButton, emailVerified ? styles.sideButtonVerified : styles.sideButtonDark]}
+                onPress={handleConfirmCode}
+              >
+                <Text style={emailVerified ? styles.sideButtonVerifiedText : styles.sideButtonDarkText}>
+                  {emailVerified ? '인증완료' : confirmingCode ? '확인 중...' : '확인'}
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -183,8 +232,8 @@ export default function BookerSignUpScreen() {
         <PrimaryFilledButton
           title={submitting ? '가입 처리 중...' : '가입 완료하기'}
           onPress={handleSubmit}
-          disabled={!allRequiredAgreed || !phoneNumber || submitting}
-          style={{ opacity: allRequiredAgreed && phoneNumber && !submitting ? 1 : 0.4 }}
+          disabled={!allRequiredAgreed || !phoneNumber || !emailVerified || submitting}
+          style={{ opacity: allRequiredAgreed && phoneNumber && emailVerified && !submitting ? 1 : 0.4 }}
         />
       </View>
     </SafeAreaView>
@@ -217,5 +266,7 @@ const styles = StyleSheet.create({
   sideButtonNeutralText: { ...Typography.bodyLG, color: AppColors.inkSecondary },
   sideButtonDark: { backgroundColor: AppColors.ink, paddingHorizontal: AppSpacing.s20 },
   sideButtonDarkText: { ...Typography.bodyLG, color: AppColors.white },
+  sideButtonVerified: { backgroundColor: AppColors.primary, paddingHorizontal: AppSpacing.s20 },
+  sideButtonVerifiedText: { ...Typography.bodyLG, color: AppColors.onPrimary },
   footer: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s12 },
 });

@@ -57,11 +57,18 @@ public class ConnectService {
     private final Map<UUID, List<TimeBlock>> blocksByOwner = new ConcurrentHashMap<>();
     private final Map<UUID, List<ChatMessage>> messagesByReservation = new ConcurrentHashMap<>();
     private final Map<UUID, String> deviceTokensByUser = new ConcurrentHashMap<>();
+    private final Map<String, VerificationEntry> verificationCodesByEmail = new ConcurrentHashMap<>();
+
+    private record VerificationEntry(String code, java.time.Instant expiresAt) {
+    }
 
     private final PushNotificationService pushNotificationService;
+    private final MailService mailService;
+    private final java.security.SecureRandom random = new java.security.SecureRandom();
 
-    public ConnectService(PushNotificationService pushNotificationService) {
+    public ConnectService(PushNotificationService pushNotificationService, MailService mailService) {
         this.pushNotificationService = pushNotificationService;
+        this.mailService = mailService;
     }
 
     private final List<String> regions = List.of("신촌", "홍대", "건대", "이태원");
@@ -525,6 +532,26 @@ public class ConnectService {
                 .filter(owner -> owner.contact().equals(contact))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Owner not found."));
+    }
+
+    public void sendVerificationCode(String email) {
+        String code = String.format("%06d", random.nextInt(1_000_000));
+        verificationCodesByEmail.put(
+                email.toLowerCase(),
+                new VerificationEntry(code, java.time.Instant.now().plusSeconds(300))
+        );
+        mailService.sendVerificationCode(email, code);
+    }
+
+    public void confirmVerificationCode(String email, String code) {
+        VerificationEntry entry = verificationCodesByEmail.get(email.toLowerCase());
+        if (entry == null || java.time.Instant.now().isAfter(entry.expiresAt())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "인증번호가 만료됐어요. 다시 요청해주세요.");
+        }
+        if (!entry.code().equals(code)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "인증번호가 올바르지 않아요.");
+        }
+        verificationCodesByEmail.remove(email.toLowerCase());
     }
 
     private void sendPush(UUID userId, String title, String body, Map<String, Object> data) {
