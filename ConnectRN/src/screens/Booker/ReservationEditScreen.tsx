@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { showAlert } from '../../utils/alert';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import AppDatePicker from '../../components/AppDatePicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
@@ -174,17 +174,7 @@ export default function ReservationEditScreen() {
         <View style={styles.section}>
           <Text style={styles.fieldTitle}>날짜</Text>
           <View style={styles.datePickerBox}>
-            <DateTimePicker
-              value={date}
-              mode="date"
-              minimumDate={startOfToday()}
-              display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
-              onChange={(_event, selectedDate) => {
-                if (selectedDate) setDate(selectedDate);
-              }}
-              themeVariant="light"
-              accentColor={AppColors.primaryDeep}
-            />
+            <AppDatePicker value={date} minimumDate={startOfToday()} onChange={setDate} />
           </View>
         </View>
 
