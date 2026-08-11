@@ -6,7 +6,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
+import { OwnerTypography as Typography } from '../../theme/typography';
 import { defaultTimeSlots, ownerStore } from '../../models/mockData';
 import { useAppState } from '../../state/AppState';
 import { InfoBanner } from '../../components/CommonComponents';
@@ -108,6 +108,7 @@ export default function TimeBlockScreen() {
               ? '버튼을 터치하여 실시간으로 예약을 차단하거나 해제할 수 있습니다. 매장 정원이 가득 찬 시간대는 자동으로 차단되고, 자리가 남아있으면 계속 예약을 받을 수 있어요.'
               : '버튼을 터치하여 실시간으로 예약을 차단하거나 해제할 수 있습니다. 확정된 예약이 있는 시간대는 자동으로 차단되어 고객 앱에서 예약 불가로 표시됩니다.'
           }
+          appRole="owner"
         />
 
         <View style={styles.timelineHeaderRow}>

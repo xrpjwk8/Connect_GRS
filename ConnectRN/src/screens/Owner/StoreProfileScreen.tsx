@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
+import { OwnerTypography as Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { ownerStore } from '../../models/mockData';
 import { GhostButton } from '../../components/Buttons';
@@ -43,7 +43,7 @@ export default function StoreProfileScreen() {
 
         <View style={{ height: 12 }} />
 
-        <GhostButton title="로그아웃" onPress={logout} textStyle={{ color: AppColors.danger }} />
+        <GhostButton title="로그아웃" onPress={logout} textStyle={{ color: AppColors.danger }} appRole="owner" />
       </ScrollView>
     </SafeAreaView>
   );

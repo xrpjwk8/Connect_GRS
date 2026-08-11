@@ -2,14 +2,15 @@ import React from 'react';
 import { Pressable, PressableProps, StyleSheet, Text, TextStyle } from 'react-native';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
-import { Typography } from '../theme/typography';
+import { getTypography, type AppRole } from '../theme/typography';
 
 interface AppButtonProps extends PressableProps {
   title: string;
   textStyle?: TextStyle;
+  appRole?: AppRole;
 }
 
-export function PrimaryFilledButton({ title, style, ...props }: AppButtonProps) {
+export function PrimaryFilledButton({ title, style, appRole = 'booker', ...props }: AppButtonProps) {
   return (
     <Pressable
       {...props}
@@ -20,12 +21,12 @@ export function PrimaryFilledButton({ title, style, ...props }: AppButtonProps) 
         typeof style === 'function' ? style(state) : style,
       ]}
     >
-      <Text style={[styles.label, { color: AppColors.white }]}>{title}</Text>
+      <Text style={[getTypography(appRole).titleMD, { color: AppColors.white }]}>{title}</Text>
     </Pressable>
   );
 }
 
-export function LimeButton({ title, style, ...props }: AppButtonProps) {
+export function LimeButton({ title, style, appRole = 'booker', ...props }: AppButtonProps) {
   return (
     <Pressable
       {...props}
@@ -36,12 +37,12 @@ export function LimeButton({ title, style, ...props }: AppButtonProps) {
         typeof style === 'function' ? style(state) : style,
       ]}
     >
-      <Text style={[styles.label, { color: AppColors.ink }]}>{title}</Text>
+      <Text style={[getTypography(appRole).titleMD, { color: AppColors.ink }]}>{title}</Text>
     </Pressable>
   );
 }
 
-export function GhostButton({ title, style, textStyle, ...props }: AppButtonProps) {
+export function GhostButton({ title, style, textStyle, appRole = 'booker', ...props }: AppButtonProps) {
   return (
     <Pressable
       {...props}
@@ -52,7 +53,7 @@ export function GhostButton({ title, style, textStyle, ...props }: AppButtonProp
         typeof style === 'function' ? style(state) : style,
       ]}
     >
-      <Text style={[styles.label, { color: AppColors.ink }, textStyle]}>{title}</Text>
+      <Text style={[getTypography(appRole).titleMD, { color: AppColors.ink }, textStyle]}>{title}</Text>
     </Pressable>
   );
 }
@@ -64,7 +65,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  label: { ...Typography.titleMD },
   pressed: { opacity: 0.85 },
   primaryFilled: {
     backgroundColor: AppColors.ink,

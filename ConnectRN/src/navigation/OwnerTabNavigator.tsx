@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../theme/colors';
+import { OwnerTypography } from '../theme/typography';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -73,6 +74,10 @@ export default function OwnerTabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: AppColors.primaryDeep,
         tabBarStyle: { backgroundColor: AppColors.white },
+        tabBarLabelStyle: {
+          fontSize: OwnerTypography.labelSM.fontSize,
+          fontWeight: OwnerTypography.labelSM.fontWeight,
+        },
       }}
     >
       <Tab.Screen

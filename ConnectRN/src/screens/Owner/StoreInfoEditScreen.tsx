@@ -7,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
+import { OwnerTypography as Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { AppTextField, InfoBanner, TagLabel } from '../../components/CommonComponents';
 import Card from '../../components/Card';
@@ -214,7 +214,7 @@ export default function StoreInfoEditScreen() {
             <View style={{ flex: 1 }} />
             <Text style={styles.depositUnit}>KRW</Text>
           </View>
-          <InfoBanner title="안내" message="이 금액은 예약 정책에 따라 최종 결제 금액에서 차감되거나 방문 후 환불됩니다." />
+          <InfoBanner title="안내" message="이 금액은 예약 정책에 따라 최종 결제 금액에서 차감되거나 방문 후 환불됩니다." appRole="owner" />
         </Card>
 
         <Card style={{ gap: 10 }}>
@@ -235,9 +235,10 @@ export default function StoreInfoEditScreen() {
           <View style={{ gap: 6 }}>
             <View style={styles.rowCenter}>
               <Text style={styles.fieldTitle}>네이버 지도 URL</Text>
-              <TagLabel text="필수" color={AppColors.dangerSoft} textColor={AppColors.danger} />
+              <TagLabel text="필수" color={AppColors.dangerSoft} textColor={AppColors.danger} appRole="owner" />
             </View>
             <AppTextField
+              appRole="owner"
               placeholder="https://naver.me/..."
               value={naverURL}
               onChangeText={setNaverURL}
@@ -247,6 +248,7 @@ export default function StoreInfoEditScreen() {
           <View style={{ gap: 6 }}>
             <Text style={styles.fieldTitle}>카카오 지도 URL</Text>
             <AppTextField
+              appRole="owner"
               placeholder="https://kakaomap.com/..."
               value={kakaoURL}
               onChangeText={setKakaoURL}

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from 'react-native';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
-import { Typography } from '../theme/typography';
+import { Typography, getTypography, type AppRole } from '../theme/typography';
 import type { Store } from '../models/types';
 import Card from './Card';
 
@@ -49,14 +49,16 @@ export function TagLabel({
   text,
   color = AppColors.chipBG,
   textColor = AppColors.inkSecondary,
+  appRole = 'booker',
 }: {
   text: string;
   color?: string;
   textColor?: string;
+  appRole?: AppRole;
 }) {
   return (
     <View style={[styles.tag, { backgroundColor: color }]}>
-      <Text style={[styles.tagText, { color: textColor }]}>{text}</Text>
+      <Text style={[getTypography(appRole).labelMD, { color: textColor }]}>{text}</Text>
     </View>
   );
 }
@@ -116,32 +118,54 @@ export function StoreCard({ store, photoUri }: { store: Store; photoUri?: string
   );
 }
 
-export function FormLabel({ title, required = false }: { title: string; required?: boolean }) {
+export function FormLabel({
+  title,
+  required = false,
+  appRole = 'booker',
+}: {
+  title: string;
+  required?: boolean;
+  appRole?: AppRole;
+}) {
+  const T = getTypography(appRole);
   return (
     <View style={styles.formLabelRow}>
-      <Text style={styles.formLabelText}>{title}</Text>
-      {required && <Text style={styles.formLabelRequired}>*</Text>}
+      <Text style={[T.titleMD, { color: AppColors.ink }]}>{title}</Text>
+      {required && <Text style={[T.titleMD, { color: AppColors.danger }]}>*</Text>}
     </View>
   );
 }
 
-export function AppTextField(props: React.ComponentProps<typeof TextInput>) {
+export function AppTextField({
+  appRole = 'booker',
+  style,
+  ...props
+}: React.ComponentProps<typeof TextInput> & { appRole?: AppRole }) {
   return (
     <TextInput
       placeholderTextColor={AppColors.neutral}
-      style={styles.textField}
+      style={[styles.textField, getTypography(appRole).bodyLG, style]}
       {...props}
     />
   );
 }
 
-export function InfoBanner({ title, message }: { title: string; message?: string }) {
+export function InfoBanner({
+  title,
+  message,
+  appRole = 'booker',
+}: {
+  title: string;
+  message?: string;
+  appRole?: AppRole;
+}) {
+  const T = getTypography(appRole);
   return (
     <View style={styles.infoBanner}>
       <Ionicons name="information-circle-outline" size={18} color={AppColors.inkSecondary} style={{ marginTop: 2 }} />
       <View style={{ flex: 1, gap: 4 }}>
-        <Text style={styles.infoBannerTitle}>{title}</Text>
-        {message ? <Text style={styles.infoBannerMessage}>{message}</Text> : null}
+        <Text style={[T.titleMD, { color: AppColors.ink }]}>{title}</Text>
+        {message ? <Text style={[T.bodyMD, { color: AppColors.inkSecondary }]}>{message}</Text> : null}
       </View>
     </View>
   );
@@ -226,7 +250,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 999,
   },
-  tagText: { ...Typography.labelMD },
 
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   ratingValue: { ...Typography.bodyLG, color: AppColors.ink },
@@ -258,8 +281,6 @@ const styles = StyleSheet.create({
   storeKeywordsRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
 
   formLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  formLabelText: { ...Typography.titleMD, color: AppColors.ink },
-  formLabelRequired: { ...Typography.titleMD, color: AppColors.danger },
 
   textField: {
     ...Typography.bodyLG,
@@ -280,9 +301,6 @@ const styles = StyleSheet.create({
     backgroundColor: AppColors.chipBG,
     borderRadius: 14,
   },
-  infoBannerTitle: { ...Typography.titleMD, color: AppColors.ink },
-  infoBannerMessage: { ...Typography.bodyMD, color: AppColors.inkSecondary },
-
   dashedUploader: {
     alignItems: 'center',
     gap: 8,

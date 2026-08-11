@@ -13,3 +13,18 @@ export const Typography: Record<string, TextStyle> = {
   labelMD: { fontSize: 12, fontWeight: '500' },
   labelSM: { fontSize: 11, fontWeight: '600' },
 };
+
+// 점주(Owner) 화면 전용 확대 스케일. 사장님 연령대(40~50대)가 예약자(대학생) 기준
+// 타이포보다 큰 글씨를 필요로 해 각 토큰에 +3px 적용.
+export const OwnerTypography: Record<string, TextStyle> = Object.fromEntries(
+  Object.entries(Typography).map(([key, style]) => [
+    key,
+    { ...style, fontSize: (style.fontSize ?? 0) + 3 },
+  ])
+) as Record<string, TextStyle>;
+
+export type AppRole = 'owner' | 'booker';
+
+export function getTypography(role: AppRole): Record<string, TextStyle> {
+  return role === 'owner' ? OwnerTypography : Typography;
+}

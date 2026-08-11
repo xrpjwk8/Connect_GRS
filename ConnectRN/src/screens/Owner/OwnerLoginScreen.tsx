@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
+import { OwnerTypography as Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { AppTextField, FormLabel } from '../../components/CommonComponents';
 import { LimeButton } from '../../components/Buttons';
@@ -37,10 +37,11 @@ export default function OwnerLoginScreen() {
           </View>
 
           <View style={styles.field}>
-            <FormLabel title="연락처" />
+            <FormLabel title="연락처" appRole="owner" />
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
                 <AppTextField
+                  appRole="owner"
                   placeholder="‘-’ 없이 숫자만 입력해주세요"
                   value={contact}
                   onChangeText={(text) => setContact(text.replace(/[^0-9]/g, ''))}
@@ -59,8 +60,9 @@ export default function OwnerLoginScreen() {
           </View>
 
           <View style={styles.field}>
-            <FormLabel title="인증번호" />
+            <FormLabel title="인증번호" appRole="owner" />
             <AppTextField
+              appRole="owner"
               placeholder="6자리 숫자 입력"
               value={verificationCode}
               onChangeText={(text) => setVerificationCode(text.replace(/[^0-9]/g, '').slice(0, 6))}
@@ -71,7 +73,7 @@ export default function OwnerLoginScreen() {
       </KeyboardAvoidingView>
 
       <View style={styles.footer}>
-        <LimeButton title="로그인하기" onPress={finishOwnerSignUp} disabled={!isCodeComplete} />
+        <LimeButton title="로그인하기" onPress={finishOwnerSignUp} disabled={!isCodeComplete} appRole="owner" />
       </View>
     </SafeAreaView>
   );

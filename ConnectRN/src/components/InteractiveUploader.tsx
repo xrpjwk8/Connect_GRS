@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
 import { AppSpacing } from '../theme/spacing';
-import { Typography } from '../theme/typography';
+import { getTypography, type AppRole } from '../theme/typography';
 
 interface InteractiveUploaderProps {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -14,6 +14,7 @@ interface InteractiveUploaderProps {
   subtitle: string;
   allowsFiles?: boolean;
   onPicked?: (uri: string, label: string) => void;
+  appRole?: AppRole;
 }
 
 export default function InteractiveUploader({
@@ -22,6 +23,7 @@ export default function InteractiveUploader({
   subtitle,
   allowsFiles = false,
   onPicked,
+  appRole = 'booker',
 }: InteractiveUploaderProps) {
   const [pickedLabel, setPickedLabel] = useState<string | null>(null);
 
@@ -79,10 +81,18 @@ export default function InteractiveUploader({
         size={28}
         color={pickedLabel === null ? AppColors.inkSecondary : AppColors.primaryDeep}
       />
-      <Text style={[styles.title, { color: pickedLabel === null ? AppColors.primaryDeep : AppColors.ink }]}>
+      <Text
+        style={[
+          getTypography(appRole).titleMD,
+          styles.titleBase,
+          { color: pickedLabel === null ? AppColors.primaryDeep : AppColors.ink },
+        ]}
+      >
         {pickedLabel ?? title}
       </Text>
-      <Text style={styles.subtitle}>{pickedLabel === null ? subtitle : '다시 누르면 변경할 수 있어요'}</Text>
+      <Text style={[getTypography(appRole).bodyMD, styles.subtitle]}>
+        {pickedLabel === null ? subtitle : '다시 누르면 변경할 수 있어요'}
+      </Text>
     </Pressable>
   );
 }
@@ -99,6 +109,6 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: AppColors.outlineVariant,
   },
-  title: { ...Typography.titleMD, textAlign: 'center' },
-  subtitle: { ...Typography.bodyMD, color: AppColors.neutral },
+  titleBase: { textAlign: 'center' },
+  subtitle: { color: AppColors.neutral },
 });

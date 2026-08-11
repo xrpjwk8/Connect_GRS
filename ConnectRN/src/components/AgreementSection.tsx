@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
 import { AppSpacing } from '../theme/spacing';
-import { Typography } from '../theme/typography';
+import { getTypography, type AppRole } from '../theme/typography';
 import { MARKETING_CONSENT_TEXT, PRIVACY_POLICY_TEXT, TERMS_OF_SERVICE_TEXT } from '../data/legalDocs';
 
 interface AgreementItem {
@@ -22,9 +22,12 @@ const ITEMS: AgreementItem[] = [
 
 export default function AgreementSection({
   onRequiredAgreedChange,
+  appRole = 'booker',
 }: {
   onRequiredAgreedChange: (allRequiredAgreed: boolean) => void;
+  appRole?: AppRole;
 }) {
+  const T = getTypography(appRole);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [viewingItem, setViewingItem] = useState<AgreementItem | null>(null);
 
@@ -53,7 +56,7 @@ export default function AgreementSection({
           size={22}
           color={allChecked ? AppColors.primaryDeep : AppColors.inkSecondary}
         />
-        <Text style={styles.allLabel}>전체 동의합니다</Text>
+        <Text style={[T.titleMD, { color: AppColors.ink }]}>전체 동의합니다</Text>
       </Pressable>
 
       <View style={styles.divider} />
@@ -66,7 +69,7 @@ export default function AgreementSection({
               size={20}
               color={checked[item.key] ? AppColors.primaryDeep : AppColors.inkSecondary}
             />
-            <Text style={styles.itemLabel}>
+            <Text style={[T.bodyLG, { color: AppColors.ink }]}>
               <Text style={{ color: item.required ? AppColors.danger : AppColors.inkSecondary }}>
                 {item.required ? '[필수] ' : '[선택] '}
               </Text>
@@ -74,7 +77,7 @@ export default function AgreementSection({
             </Text>
           </Pressable>
           <Pressable hitSlop={8} onPress={() => setViewingItem(item)}>
-            <Text style={styles.viewLink}>보기</Text>
+            <Text style={[T.bodyMD, { color: AppColors.inkSecondary, textDecorationLine: 'underline' }]}>보기</Text>
           </Pressable>
         </View>
       ))}
@@ -82,13 +85,15 @@ export default function AgreementSection({
       <Modal visible={viewingItem != null} animationType="slide" onRequestClose={() => setViewingItem(null)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalTopBar}>
-            <Text style={styles.modalTitle}>{viewingItem?.label.replace(' 동의', '')}</Text>
+            <Text style={[T.headlineSM, { color: AppColors.ink }]}>{viewingItem?.label.replace(' 동의', '')}</Text>
             <Pressable onPress={() => setViewingItem(null)} hitSlop={8}>
               <Ionicons name="close" size={22} color={AppColors.ink} />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.modalScrollContent}>
-            <Text style={styles.modalBodyText}>{viewingItem?.content}</Text>
+            <Text style={[T.bodyLG, { color: AppColors.inkSecondary, lineHeight: appRole === 'owner' ? 25 : 22 }]}>
+              {viewingItem?.content}
+            </Text>
           </ScrollView>
         </View>
       </Modal>
@@ -104,12 +109,9 @@ const styles = StyleSheet.create({
     borderRadius: AppRadius.lg,
   },
   allRow: { flexDirection: 'row', alignItems: 'center', gap: AppSpacing.s8 },
-  allLabel: { ...Typography.titleMD, color: AppColors.ink },
   divider: { height: 1, backgroundColor: AppColors.borderStrong },
   itemRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemCheckArea: { flexDirection: 'row', alignItems: 'center', gap: AppSpacing.s8, flex: 1 },
-  itemLabel: { ...Typography.bodyLG, color: AppColors.ink },
-  viewLink: { ...Typography.bodyMD, color: AppColors.inkSecondary, textDecorationLine: 'underline' },
 
   modalContainer: { flex: 1, backgroundColor: AppColors.surface, paddingTop: 56 },
   modalTopBar: {
@@ -119,7 +121,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: AppSpacing.s18,
     paddingBottom: AppSpacing.s14,
   },
-  modalTitle: { ...Typography.headlineSM, color: AppColors.ink },
   modalScrollContent: { paddingHorizontal: AppSpacing.s18, paddingBottom: AppSpacing.s40 },
-  modalBodyText: { ...Typography.bodyLG, color: AppColors.inkSecondary, lineHeight: 22 },
 });

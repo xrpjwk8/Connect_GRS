@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
+import { OwnerTypography as Typography } from '../../theme/typography';
 import { ownerStore } from '../../models/mockData';
 import { useAppState } from '../../state/AppState';
 import { TagLabel } from '../../components/CommonComponents';
@@ -55,7 +55,7 @@ export default function OwnerDashboardScreen() {
 
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionTitle}>신규 예약 요청</Text>
-          <TagLabel text={String(requests.length)} color={AppColors.danger} textColor={AppColors.white} />
+          <TagLabel text={String(requests.length)} color={AppColors.danger} textColor={AppColors.white} appRole="owner" />
         </View>
 
         <View style={{ gap: 12 }}>

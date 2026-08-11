@@ -6,7 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
+import { OwnerTypography as Typography } from '../../theme/typography';
 import { ownerStore } from '../../models/mockData';
 import { useAppState } from '../../state/AppState';
 import { PrimaryFilledButton } from '../../components/Buttons';
@@ -74,8 +74,6 @@ export default function ReservationCalendarScreen() {
             <Ionicons name="storefront-outline" size={16} color={AppColors.primaryDeep} />
           </View>
           <Text style={styles.headerTitle}>캠퍼스 커넥트 비즈니스</Text>
-          <View style={{ flex: 1 }} />
-          <Ionicons name="notifications-outline" size={18} color={AppColors.ink} />
         </View>
 
         <View style={styles.introBlock}>
@@ -182,6 +180,7 @@ export default function ReservationCalendarScreen() {
         <PrimaryFilledButton
           title="+ 새 예약 등록"
           onPress={() => navigation.navigate('ManualReservation', { dateKey: dateKey(selectedDate) })}
+          appRole="owner"
         />
 
         <Text style={styles.reservationCount}>

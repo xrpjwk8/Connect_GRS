@@ -6,7 +6,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
+import { OwnerTypography as Typography } from '../../theme/typography';
 import { defaultTimeSlots, ownerStore } from '../../models/mockData';
 import { useAppState } from '../../state/AppState';
 import { FormLabel, InfoBanner } from '../../components/CommonComponents';
@@ -132,6 +132,7 @@ export default function ManualReservationScreen() {
         <InfoBanner
           title="오프라인 예약 등록"
           message="전화 등 앱 밖에서 받은 예약을 등록하면 캘린더와 시간표에 바로 반영돼요."
+          appRole="owner"
         />
 
         <View style={styles.field}>
@@ -186,7 +187,7 @@ export default function ManualReservationScreen() {
         </View>
 
         <View style={styles.field}>
-          <FormLabel title="예약자 / 단체명" required />
+          <FormLabel title="예약자 / 단체명" required appRole="owner" />
           <View style={styles.inputBox}>
             <TextInput
               style={styles.textInput}
