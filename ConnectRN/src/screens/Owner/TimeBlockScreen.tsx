@@ -1,14 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
 import { defaultTimeSlots, ownerStore } from '../../models/mockData';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { InfoBanner } from '../../components/CommonComponents';
 import { dateKey, isSameDay, parseDateKey } from '../../utils/date';
 import type { TimeSlot, TimeSlotState } from '../../models/types';
@@ -29,6 +28,8 @@ export default function TimeBlockScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { myReservations, capacityOverbookingEnabled, blockedSlotsByDate, setBlockedSlotsByDate } = useAppState();
+  const Typography = useTypography('owner');
+  const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
   const requestedStart: string | undefined = route.params?.dateKey;
   const weekDays = useMemo(() => buildWeekDays(requestedStart ? parseDateKey(requestedStart) : new Date()), [requestedStart]);
@@ -108,6 +109,7 @@ export default function TimeBlockScreen() {
               ? '버튼을 터치하여 실시간으로 예약을 차단하거나 해제할 수 있습니다. 매장 정원이 가득 찬 시간대는 자동으로 차단되고, 자리가 남아있으면 계속 예약을 받을 수 있어요.'
               : '버튼을 터치하여 실시간으로 예약을 차단하거나 해제할 수 있습니다. 확정된 예약이 있는 시간대는 자동으로 차단되어 고객 앱에서 예약 불가로 표시됩니다.'
           }
+          appRole="owner"
         />
 
         <View style={styles.timelineHeaderRow}>
@@ -133,7 +135,7 @@ export default function TimeBlockScreen() {
 
         <View style={styles.slotGrid}>
           {slots.map((slot) => (
-            <TimeSlotCell key={slot.id} slot={slot} onPress={() => toggle(slot)} />
+            <TimeSlotCell key={slot.id} slot={slot} onPress={() => toggle(slot)} styles={styles} />
           ))}
         </View>
       </ScrollView>
@@ -145,7 +147,15 @@ export default function TimeBlockScreen() {
   );
 }
 
-function TimeSlotCell({ slot, onPress }: { slot: TimeSlot & { booked: number }; onPress: () => void }) {
+function TimeSlotCell({
+  slot,
+  onPress,
+  styles,
+}: {
+  slot: TimeSlot & { booked: number };
+  onPress: () => void;
+  styles: ReturnType<typeof makeStyles>;
+}) {
   const isClosed = slot.state === 'closed';
   const isBlocked = slot.state === 'blocked';
   const isReserved = slot.state === 'reserved';
@@ -177,7 +187,8 @@ function TimeSlotCell({ slot, onPress }: { slot: TimeSlot & { booked: number }; 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Typography: Record<string, TextStyle>) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: AppColors.surface },
   topBar: {
     flexDirection: 'row',

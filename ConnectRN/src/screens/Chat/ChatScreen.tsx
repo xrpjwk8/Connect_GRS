@@ -15,8 +15,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { InfoBanner } from '../../components/CommonComponents';
 
 const OWNER_QUICK_REPLIES = ['계좌번호: 국민은행 123456-78-901234', '입금 확인했습니다, 감사합니다!'];
@@ -29,6 +28,7 @@ export default function ChatScreen() {
   const { selectedRole, myReservations, chatMessages, sendChatMessage } = useAppState();
   const role = selectedRole ?? 'booker';
   const isOwner = role === 'owner';
+  const T = useTypography(role);
 
   const reservation = myReservations.find((r) => r.id === reservationId);
   const messages = chatMessages.filter((m) => m.reservationId === reservationId);
@@ -51,14 +51,14 @@ export default function ChatScreen() {
         <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="chevron-back" size={22} color={AppColors.ink} />
         </Pressable>
-        <Text style={styles.headerTitle}>{peerName}</Text>
+        <Text style={[T.titleMD, { color: AppColors.ink }]}>{peerName}</Text>
         <View style={{ width: 22 }} />
       </View>
 
       {reservation && (
         <View style={styles.reservationInfoBar}>
           <Ionicons name="calendar-outline" size={14} color={AppColors.inkSecondary} />
-          <Text style={styles.reservationInfoText}>예약정보: {reservation.dateLabel}</Text>
+          <Text style={[T.labelMD, { color: AppColors.inkSecondary }]}>예약정보: {reservation.dateLabel}</Text>
         </View>
       )}
 
@@ -68,17 +68,17 @@ export default function ChatScreen() {
           contentContainerStyle={styles.scrollContent}
           onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
         >
-          <InfoBanner title="개인정보유출 주의" />
+          <InfoBanner title="개인정보유출 주의" appRole={role} />
 
           {messages.map((m) => (
-            <ChatBubble key={m.id} text={m.text} timeLabel={m.timeLabel} isMine={m.senderRole === role} />
+            <ChatBubble key={m.id} text={m.text} timeLabel={m.timeLabel} isMine={m.senderRole === role} role={role} />
           ))}
         </ScrollView>
 
         <View style={styles.quickReplyRow}>
           {quickReplies.map((q) => (
             <Pressable key={q} style={styles.quickReplyChip} onPress={() => handleSend(q)}>
-              <Text style={styles.quickReplyText} numberOfLines={1}>
+              <Text style={[T.labelMD, { color: AppColors.inkSecondary }]} numberOfLines={1}>
                 {q}
               </Text>
             </Pressable>
@@ -87,7 +87,7 @@ export default function ChatScreen() {
 
         <View style={styles.inputRow}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, T.bodyLG]}
             placeholder="메시지 보내기"
             placeholderTextColor={AppColors.neutral}
             value={draft}
@@ -103,13 +103,24 @@ export default function ChatScreen() {
   );
 }
 
-function ChatBubble({ text, timeLabel, isMine }: { text: string; timeLabel: string; isMine: boolean }) {
+function ChatBubble({
+  text,
+  timeLabel,
+  isMine,
+  role,
+}: {
+  text: string;
+  timeLabel: string;
+  isMine: boolean;
+  role: 'owner' | 'booker';
+}) {
+  const T = useTypography(role);
   return (
     <View style={[styles.bubbleRow, isMine && styles.bubbleRowMine]}>
       <View style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleTheirs]}>
-        <Text style={[styles.bubbleText, isMine && styles.bubbleTextMine]}>{text}</Text>
+        <Text style={[T.bodyLG, { color: AppColors.ink }]}>{text}</Text>
       </View>
-      <Text style={styles.bubbleTime}>{timeLabel}</Text>
+      <Text style={[T.labelMD, { color: AppColors.neutral }]}>{timeLabel}</Text>
     </View>
   );
 }
@@ -126,7 +137,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: AppColors.borderStrong,
   },
-  headerTitle: { ...Typography.titleMD, color: AppColors.ink },
   reservationInfoBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -137,7 +147,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: AppColors.borderStrong,
   },
-  reservationInfoText: { ...Typography.labelMD, color: AppColors.inkSecondary },
   scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s14, gap: AppSpacing.s10 },
 
   bubbleRow: { alignItems: 'flex-start', gap: AppSpacing.s4, maxWidth: '80%' },
@@ -145,9 +154,6 @@ const styles = StyleSheet.create({
   bubble: { paddingHorizontal: AppSpacing.s14, paddingVertical: AppSpacing.s10, borderRadius: AppRadius.lg },
   bubbleTheirs: { backgroundColor: AppColors.white, borderWidth: 1, borderColor: AppColors.borderStrong },
   bubbleMine: { backgroundColor: AppColors.primary },
-  bubbleText: { ...Typography.bodyLG, color: AppColors.ink },
-  bubbleTextMine: { color: AppColors.ink },
-  bubbleTime: { ...Typography.labelMD, color: AppColors.neutral },
 
   quickReplyRow: {
     flexDirection: 'row',
@@ -162,7 +168,6 @@ const styles = StyleSheet.create({
     backgroundColor: AppColors.chipBG,
     maxWidth: 220,
   },
-  quickReplyText: { ...Typography.labelMD, color: AppColors.inkSecondary },
 
   inputRow: {
     flexDirection: 'row',
@@ -176,7 +181,6 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    ...Typography.bodyLG,
     color: AppColors.ink,
     paddingHorizontal: AppSpacing.s14,
     paddingVertical: AppSpacing.s10,

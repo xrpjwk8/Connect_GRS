@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextStyle,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,14 +14,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { AppTextField, FormLabel, InfoBanner } from '../../components/CommonComponents';
 import InteractiveUploader from '../../components/InteractiveUploader';
 import AgreementSection from '../../components/AgreementSection';
 
 export default function OwnerSignUpScreen() {
   const { finishOwnerSignUp, cancelSignUp } = useAppState();
+  const Typography = useTypography('owner');
+  const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
   const [storeName, setStoreName] = useState('');
   const [contact, setContact] = useState('');
@@ -45,8 +47,9 @@ export default function OwnerSignUpScreen() {
           </View>
 
           <View style={styles.field}>
-            <FormLabel title="가게명" />
+            <FormLabel title="가게명" appRole="owner" />
             <AppTextField
+              appRole="owner"
               placeholder="가게 이름을 입력해주세요"
               value={storeName}
               onChangeText={(text) => setStoreName(text.slice(0, 20))}
@@ -54,8 +57,9 @@ export default function OwnerSignUpScreen() {
           </View>
 
           <View style={styles.field}>
-            <FormLabel title="연락처" />
+            <FormLabel title="연락처" appRole="owner" />
             <AppTextField
+              appRole="owner"
               placeholder="‘-’ 없이 숫자만 입력해주세요"
               value={contact}
               onChangeText={(text) => setContact(text.replace(/[^0-9]/g, ''))}
@@ -64,8 +68,9 @@ export default function OwnerSignUpScreen() {
           </View>
 
           <View style={styles.field}>
-            <FormLabel title="사업자 등록 번호" />
+            <FormLabel title="사업자 등록 번호" appRole="owner" />
             <AppTextField
+              appRole="owner"
               placeholder="사업자 등록 번호 10자리를 입력해주세요"
               value={businessNumber}
               onChangeText={(text) => setBusinessNumber(text.replace(/[^0-9]/g, '').slice(0, 10))}
@@ -74,8 +79,9 @@ export default function OwnerSignUpScreen() {
           </View>
 
           <View style={styles.field}>
-            <FormLabel title="사업자등록증" />
+            <FormLabel title="사업자등록증" appRole="owner" />
             <InteractiveUploader
+              appRole="owner"
               icon="document-attach-outline"
               title="사진 또는 PDF 파일 업로드"
               subtitle="JPG, PNG, PDF (최대 10MB)"
@@ -86,9 +92,10 @@ export default function OwnerSignUpScreen() {
           <InfoBanner
             title="가입 승인 안내"
             message="사업자 정보 확인 후 관리자 승인을 거쳐 서비스 이용이 가능합니다. 승인 완료까지 영업일 기준 1~2일이 소요될 수 있습니다."
+            appRole="owner"
           />
 
-          <AgreementSection onRequiredAgreedChange={setAllRequiredAgreed} />
+          <AgreementSection onRequiredAgreedChange={setAllRequiredAgreed} appRole="owner" />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -105,28 +112,29 @@ export default function OwnerSignUpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.surface },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: AppSpacing.s18,
-    paddingVertical: AppSpacing.s14,
-  },
-  topBarTitle: { ...Typography.titleMD, color: AppColors.ink },
-  scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s24 },
-  introBlock: { gap: AppSpacing.s6, paddingTop: AppSpacing.s10 },
-  introTitle: { ...Typography.headlineLG, color: AppColors.ink },
-  introSubtitle: { ...Typography.bodyLG, color: AppColors.inkSecondary },
-  field: { gap: AppSpacing.s8 },
-  footer: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s12 },
-  submitButton: {
-    minHeight: 52,
-    borderRadius: AppRadius.pill,
-    backgroundColor: AppColors.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitButtonText: { ...Typography.titleMD, color: AppColors.inkSecondary },
-});
+const makeStyles = (Typography: Record<string, TextStyle>) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: AppColors.surface },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: AppSpacing.s18,
+      paddingVertical: AppSpacing.s14,
+    },
+    topBarTitle: { ...Typography.titleMD, color: AppColors.ink },
+    scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s24 },
+    introBlock: { gap: AppSpacing.s6, paddingTop: AppSpacing.s10 },
+    introTitle: { ...Typography.headlineLG, color: AppColors.ink },
+    introSubtitle: { ...Typography.bodyLG, color: AppColors.inkSecondary },
+    field: { gap: AppSpacing.s8 },
+    footer: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s12 },
+    submitButton: {
+      minHeight: 52,
+      borderRadius: AppRadius.pill,
+      backgroundColor: AppColors.surfaceContainerHigh,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    submitButtonText: { ...Typography.titleMD, color: AppColors.inkSecondary },
+  });

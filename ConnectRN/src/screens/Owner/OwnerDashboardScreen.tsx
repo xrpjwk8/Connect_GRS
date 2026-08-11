@@ -1,18 +1,19 @@
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
 import { ownerStore } from '../../models/mockData';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { TagLabel } from '../../components/CommonComponents';
 import type { MyReservation } from '../../models/types';
 
 export default function OwnerDashboardScreen() {
   const { myReservations, setMyReservations } = useAppState();
+  const Typography = useTypography('owner');
+  const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
   const requests = useMemo(
     () =>
@@ -55,7 +56,7 @@ export default function OwnerDashboardScreen() {
 
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionTitle}>신규 예약 요청</Text>
-          <TagLabel text={String(requests.length)} color={AppColors.danger} textColor={AppColors.white} />
+          <TagLabel text={String(requests.length)} color={AppColors.danger} textColor={AppColors.white} appRole="owner" />
         </View>
 
         <View style={{ gap: 12 }}>
@@ -68,6 +69,7 @@ export default function OwnerDashboardScreen() {
                 req={req}
                 onAccept={() => decide(req.id, 'confirmed')}
                 onReject={() => decide(req.id, 'rejected')}
+                styles={styles}
               />
             ))
           )}
@@ -81,7 +83,7 @@ export default function OwnerDashboardScreen() {
           {upcoming.length === 0 ? (
             <Text style={styles.emptyText}>7일 이내 다가오는 예약이 없어요.</Text>
           ) : (
-            upcoming.map((res) => <UpcomingCard key={res.id} res={res} />)
+            upcoming.map((res) => <UpcomingCard key={res.id} res={res} styles={styles} />)
           )}
         </View>
       </ScrollView>
@@ -93,10 +95,12 @@ function RequestCard({
   req,
   onAccept,
   onReject,
+  styles,
 }: {
   req: MyReservation;
   onAccept: () => void;
   onReject: () => void;
+  styles: ReturnType<typeof makeStyles>;
 }) {
   const bookerName = req.bookerName || '예약자';
   return (
@@ -133,7 +137,7 @@ function RequestCard({
   );
 }
 
-function UpcomingCard({ res }: { res: MyReservation }) {
+function UpcomingCard({ res, styles }: { res: MyReservation; styles: ReturnType<typeof makeStyles> }) {
   const bookerName = res.bookerName || '예약자';
   return (
     <View style={styles.upcomingCard}>
@@ -152,7 +156,8 @@ function UpcomingCard({ res }: { res: MyReservation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Typography: Record<string, TextStyle>) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: AppColors.surface },
   scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s20 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingBottom: AppSpacing.s4 },

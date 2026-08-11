@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import type { ChatMessage, MyReservation, SearchFilter, UserRole } from '../models/types';
 import { allReservations as mockAllReservations, initialChatMessages } from '../models/mockData';
+import { getTypography, type AppRole, type OwnerFontScale } from '../theme/typography';
 
 export type Route = 'onboarding' | 'bookerTabs' | 'ownerTabs';
 export type OnboardingDestination = 'bookerSignUp' | 'ownerSignUp' | 'bookerLogin' | 'ownerLogin';
@@ -63,6 +64,10 @@ interface AppStateValue {
   selectedBookerTab: number;
   setSelectedBookerTab: (v: number) => void;
 
+  // 점주가 마이페이지에서 고르는 글씨 크기 (보통/크게/아주 크게)
+  ownerFontScale: OwnerFontScale;
+  setOwnerFontScale: (v: OwnerFontScale) => void;
+
   goToBookerSignUp: () => void;
   goToOwnerSignUp: () => void;
   goToBookerLogin: () => void;
@@ -103,6 +108,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [storeKakaoMapUrl, setStoreKakaoMapUrl] = useState<string | null>(null);
 
   const [selectedBookerTab, setSelectedBookerTab] = useState(0);
+  const [ownerFontScale, setOwnerFontScale] = useState<OwnerFontScale>('normal');
 
   const value = useMemo<AppStateValue>(
     () => ({
@@ -158,6 +164,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setStoreKakaoMapUrl,
       selectedBookerTab,
       setSelectedBookerTab,
+      ownerFontScale,
+      setOwnerFontScale,
 
       goToBookerSignUp: () => {
         setSelectedRole('booker');
@@ -224,6 +232,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       storeNaverMapUrl,
       storeKakaoMapUrl,
       selectedBookerTab,
+      ownerFontScale,
     ]
   );
 
@@ -234,4 +243,10 @@ export function useAppState(): AppStateValue {
   const ctx = useContext(AppStateContext);
   if (!ctx) throw new Error('useAppState must be used within AppStateProvider');
   return ctx;
+}
+
+// role별 타이포 스케일. owner는 사용자가 마이페이지에서 고른 ownerFontScale을 반영한다.
+export function useTypography(role: AppRole): Record<string, import('react-native').TextStyle> {
+  const { ownerFontScale } = useAppState();
+  return useMemo(() => getTypography(role, ownerFontScale), [role, ownerFontScale]);
 }
