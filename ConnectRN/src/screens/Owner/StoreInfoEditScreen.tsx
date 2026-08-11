@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,8 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { OwnerTypography as Typography } from '../../theme/typography';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { AppTextField, InfoBanner, TagLabel } from '../../components/CommonComponents';
 import Card from '../../components/Card';
 
@@ -29,6 +28,8 @@ export default function StoreInfoEditScreen() {
     storeKakaoMapUrl,
     setStoreKakaoMapUrl,
   } = useAppState();
+  const Typography = useTypography('owner');
+  const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
   // 아래는 전부 "변경사항 저장" 누르기 전까지는 실제 앱 상태에 반영되지 않는 임시(draft) 값
   const [draftPhotoWideUri, setDraftPhotoWideUri] = useState(storePhotoWideUri);
@@ -89,7 +90,7 @@ export default function StoreInfoEditScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Card style={{ gap: 10 }}>
-          <SectionHeader icon="image-outline" title="가게 대표 사진" />
+          <SectionHeader icon="image-outline" title="가게 대표 사진" styles={styles} />
           <Pressable
             style={styles.photoUploadWide}
             onPress={() => handlePickStorePhoto([2, 1], setDraftPhotoWideUri)}
@@ -115,7 +116,7 @@ export default function StoreInfoEditScreen() {
         </Card>
 
         <Card style={{ gap: 10 }}>
-          <SectionHeader icon="square-outline" title="가게 정사각형 사진" />
+          <SectionHeader icon="square-outline" title="가게 정사각형 사진" styles={styles} />
           <Pressable
             style={styles.photoUploadSquare}
             onPress={() => handlePickStorePhoto([1, 1], setDraftPhotoSquareUri)}
@@ -141,7 +142,7 @@ export default function StoreInfoEditScreen() {
         </Card>
 
         <Card style={{ gap: 12 }}>
-          <SectionHeader icon="list-outline" title="가게 업종 카테고리" />
+          <SectionHeader icon="list-outline" title="가게 업종 카테고리" styles={styles} />
           <Text style={styles.bodyMuted}>가게의 주요 업종을 하나 선택해 주세요. 검색 및 필터링에 활용됩니다.</Text>
           <View style={styles.flowRow}>
             {CATEGORIES.map((c) => {
@@ -167,7 +168,7 @@ export default function StoreInfoEditScreen() {
 
         <Card style={{ gap: 10 }}>
           <View style={styles.keywordHeaderRow}>
-            <SectionHeader icon="pricetag-outline" title="가게 키워드" />
+            <SectionHeader icon="pricetag-outline" title="가게 키워드" styles={styles} />
             <View style={{ flex: 1 }} />
             <Text style={styles.keywordCountText}>{keywords.length}/{KEYWORD_LIMIT}</Text>
           </View>
@@ -201,7 +202,7 @@ export default function StoreInfoEditScreen() {
         </Card>
 
         <Card style={{ gap: 10 }}>
-          <SectionHeader icon="cash-outline" title="예약금 설정" />
+          <SectionHeader icon="cash-outline" title="예약금 설정" styles={styles} />
           <Text style={styles.bodyMuted}>악성노쇼 방지를 위한 예약금을 책정하여 노쇼를 방지하세요.</Text>
           <View style={styles.depositRow}>
             <TextInput
@@ -218,7 +219,7 @@ export default function StoreInfoEditScreen() {
         </Card>
 
         <Card style={{ gap: 10 }}>
-          <SectionHeader icon="options-outline" title="예약 정책" />
+          <SectionHeader icon="options-outline" title="예약 정책" styles={styles} />
           <View style={styles.toggleRow}>
             <View style={{ flex: 1, gap: 2 }}>
               <Text style={styles.fieldTitle}>잔여 좌석 기반 중복 예약</Text>
@@ -226,12 +227,12 @@ export default function StoreInfoEditScreen() {
                 이미 예약이 있는 시간대라도 매장 정원이 남아있으면 그 자리 수만큼 추가 예약을 받아요.
               </Text>
             </View>
-            <ToggleSwitch value={draftOverbookingEnabled} onChange={setDraftOverbookingEnabled} />
+            <ToggleSwitch value={draftOverbookingEnabled} onChange={setDraftOverbookingEnabled} styles={styles} />
           </View>
         </Card>
 
         <Card style={{ gap: 10 }}>
-          <SectionHeader icon="map-outline" title="가게주소 / 외부 지도 링크" />
+          <SectionHeader icon="map-outline" title="가게주소 / 외부 지도 링크" styles={styles} />
           <View style={{ gap: 6 }}>
             <View style={styles.rowCenter}>
               <Text style={styles.fieldTitle}>네이버 지도 URL</Text>
@@ -268,7 +269,15 @@ export default function StoreInfoEditScreen() {
   );
 }
 
-function SectionHeader({ icon, title }: { icon: React.ComponentProps<typeof Ionicons>['name']; title: string }) {
+function SectionHeader({
+  icon,
+  title,
+  styles,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  title: string;
+  styles: ReturnType<typeof makeStyles>;
+}) {
   return (
     <View style={styles.sectionHeaderRow}>
       <Ionicons name={icon} size={16} color={AppColors.ink} />
@@ -277,7 +286,15 @@ function SectionHeader({ icon, title }: { icon: React.ComponentProps<typeof Ioni
   );
 }
 
-function ToggleSwitch({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+function ToggleSwitch({
+  value,
+  onChange,
+  styles,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+  styles: ReturnType<typeof makeStyles>;
+}) {
   return (
     <Pressable
       onPress={() => onChange(!value)}
@@ -288,7 +305,8 @@ function ToggleSwitch({ value, onChange }: { value: boolean; onChange: (v: boole
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Typography: Record<string, TextStyle>) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: AppColors.surface },
   topBar: {
     flexDirection: 'row',

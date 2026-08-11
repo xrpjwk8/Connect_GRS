@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
 import { AppSpacing } from '../../theme/spacing';
-import { OwnerTypography as Typography } from '../../theme/typography';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { AppTextField, FormLabel } from '../../components/CommonComponents';
 import { LimeButton } from '../../components/Buttons';
 
 export default function OwnerLoginScreen() {
   const { finishOwnerSignUp, cancelSignUp } = useAppState();
+  const Typography = useTypography('owner');
+  const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
   const [contact, setContact] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -79,25 +80,26 @@ export default function OwnerLoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.surface },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: AppSpacing.s18,
-    paddingVertical: AppSpacing.s14,
-  },
-  topBarTitle: { ...Typography.titleMD, color: AppColors.ink },
-  scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s24 },
-  introBlock: { gap: AppSpacing.s6, paddingTop: AppSpacing.s10 },
-  introTitle: { ...Typography.headlineLG, color: AppColors.ink },
-  introSubtitle: { ...Typography.bodyLG, color: AppColors.inkSecondary },
-  field: { gap: AppSpacing.s8 },
-  row: { flexDirection: 'row', gap: AppSpacing.s10, alignItems: 'stretch' },
-  sideButton: { borderRadius: 14, paddingHorizontal: AppSpacing.s16, alignItems: 'center', justifyContent: 'center' },
-  sideButtonNeutral: { backgroundColor: AppColors.surfaceContainerHigh },
-  sideButtonNeutralText: { ...Typography.bodyLG, color: AppColors.inkSecondary },
-  hintText: { ...Typography.labelMD, color: AppColors.primaryDeep },
-  footer: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s12 },
-});
+const makeStyles = (Typography: Record<string, TextStyle>) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: AppColors.surface },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: AppSpacing.s18,
+      paddingVertical: AppSpacing.s14,
+    },
+    topBarTitle: { ...Typography.titleMD, color: AppColors.ink },
+    scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s24 },
+    introBlock: { gap: AppSpacing.s6, paddingTop: AppSpacing.s10 },
+    introTitle: { ...Typography.headlineLG, color: AppColors.ink },
+    introSubtitle: { ...Typography.bodyLG, color: AppColors.inkSecondary },
+    field: { gap: AppSpacing.s8 },
+    row: { flexDirection: 'row', gap: AppSpacing.s10, alignItems: 'stretch' },
+    sideButton: { borderRadius: 14, paddingHorizontal: AppSpacing.s16, alignItems: 'center', justifyContent: 'center' },
+    sideButtonNeutral: { backgroundColor: AppColors.surfaceContainerHigh },
+    sideButtonNeutralText: { ...Typography.bodyLG, color: AppColors.inkSecondary },
+    hintText: { ...Typography.labelMD, color: AppColors.primaryDeep },
+    footer: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s12 },
+  });

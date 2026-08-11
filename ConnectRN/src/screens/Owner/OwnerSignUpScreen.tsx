@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextStyle,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,14 +14,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { OwnerTypography as Typography } from '../../theme/typography';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { AppTextField, FormLabel, InfoBanner } from '../../components/CommonComponents';
 import InteractiveUploader from '../../components/InteractiveUploader';
 import AgreementSection from '../../components/AgreementSection';
 
 export default function OwnerSignUpScreen() {
   const { finishOwnerSignUp, cancelSignUp } = useAppState();
+  const Typography = useTypography('owner');
+  const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
   const [storeName, setStoreName] = useState('');
   const [contact, setContact] = useState('');
@@ -110,28 +112,29 @@ export default function OwnerSignUpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.surface },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: AppSpacing.s18,
-    paddingVertical: AppSpacing.s14,
-  },
-  topBarTitle: { ...Typography.titleMD, color: AppColors.ink },
-  scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s24 },
-  introBlock: { gap: AppSpacing.s6, paddingTop: AppSpacing.s10 },
-  introTitle: { ...Typography.headlineLG, color: AppColors.ink },
-  introSubtitle: { ...Typography.bodyLG, color: AppColors.inkSecondary },
-  field: { gap: AppSpacing.s8 },
-  footer: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s12 },
-  submitButton: {
-    minHeight: 52,
-    borderRadius: AppRadius.pill,
-    backgroundColor: AppColors.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitButtonText: { ...Typography.titleMD, color: AppColors.inkSecondary },
-});
+const makeStyles = (Typography: Record<string, TextStyle>) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: AppColors.surface },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: AppSpacing.s18,
+      paddingVertical: AppSpacing.s14,
+    },
+    topBarTitle: { ...Typography.titleMD, color: AppColors.ink },
+    scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s24 },
+    introBlock: { gap: AppSpacing.s6, paddingTop: AppSpacing.s10 },
+    introTitle: { ...Typography.headlineLG, color: AppColors.ink },
+    introSubtitle: { ...Typography.bodyLG, color: AppColors.inkSecondary },
+    field: { gap: AppSpacing.s8 },
+    footer: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s12 },
+    submitButton: {
+      minHeight: 52,
+      borderRadius: AppRadius.pill,
+      backgroundColor: AppColors.surfaceContainerHigh,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    submitButtonText: { ...Typography.titleMD, color: AppColors.inkSecondary },
+  });

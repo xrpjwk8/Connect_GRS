@@ -15,8 +15,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { getTypography } from '../../theme/typography';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { InfoBanner } from '../../components/CommonComponents';
 
 const OWNER_QUICK_REPLIES = ['계좌번호: 국민은행 123456-78-901234', '입금 확인했습니다, 감사합니다!'];
@@ -29,7 +28,7 @@ export default function ChatScreen() {
   const { selectedRole, myReservations, chatMessages, sendChatMessage } = useAppState();
   const role = selectedRole ?? 'booker';
   const isOwner = role === 'owner';
-  const T = getTypography(role);
+  const T = useTypography(role);
 
   const reservation = myReservations.find((r) => r.id === reservationId);
   const messages = chatMessages.filter((m) => m.reservationId === reservationId);
@@ -115,7 +114,7 @@ function ChatBubble({
   isMine: boolean;
   role: 'owner' | 'booker';
 }) {
-  const T = getTypography(role);
+  const T = useTypography(role);
   return (
     <View style={[styles.bubbleRow, isMine && styles.bubbleRowMine]}>
       <View style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleTheirs]}>

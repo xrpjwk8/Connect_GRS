@@ -6,8 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { getTypography } from '../../theme/typography';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { ownerStore } from '../../models/mockData';
 import type { ChatMessage, MyReservation } from '../../models/types';
 
@@ -15,7 +14,7 @@ export default function ChatListScreen() {
   const navigation = useNavigation<any>();
   const { selectedRole, myReservations, chatMessages } = useAppState();
   const isOwner = selectedRole === 'owner';
-  const T = getTypography(selectedRole === 'owner' ? 'owner' : 'booker');
+  const T = useTypography(selectedRole === 'owner' ? 'owner' : 'booker');
 
   const threads = useMemo(() => {
     const chattable = myReservations.filter((r) => r.status === 'confirmed' || r.status === 'pending');
@@ -72,7 +71,7 @@ function ThreadRow({
   const name = isOwner ? res.bookerName || '예약자' : res.storeName;
   const title = isOwner && res.bookerAffiliation ? `${name} (${res.bookerAffiliation})` : name;
   const subtitle = lastMessage ? lastMessage.text : '아직 대화가 없어요';
-  const T = getTypography(isOwner ? 'owner' : 'booker');
+  const T = useTypography(isOwner ? 'owner' : 'booker');
 
   return (
     <Pressable style={styles.threadRow} onPress={onPress}>

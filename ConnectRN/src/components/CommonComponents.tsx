@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from 'react-native';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
-import { Typography, getTypography, type AppRole } from '../theme/typography';
+import { Typography, type AppRole } from '../theme/typography';
+import { useTypography } from '../state/AppState';
 import type { Store } from '../models/types';
 import Card from './Card';
 
@@ -56,9 +57,10 @@ export function TagLabel({
   textColor?: string;
   appRole?: AppRole;
 }) {
+  const T = useTypography(appRole);
   return (
     <View style={[styles.tag, { backgroundColor: color }]}>
-      <Text style={[getTypography(appRole).labelMD, { color: textColor }]}>{text}</Text>
+      <Text style={[T.labelMD, { color: textColor }]}>{text}</Text>
     </View>
   );
 }
@@ -127,7 +129,7 @@ export function FormLabel({
   required?: boolean;
   appRole?: AppRole;
 }) {
-  const T = getTypography(appRole);
+  const T = useTypography(appRole);
   return (
     <View style={styles.formLabelRow}>
       <Text style={[T.titleMD, { color: AppColors.ink }]}>{title}</Text>
@@ -141,10 +143,11 @@ export function AppTextField({
   style,
   ...props
 }: React.ComponentProps<typeof TextInput> & { appRole?: AppRole }) {
+  const T = useTypography(appRole);
   return (
     <TextInput
       placeholderTextColor={AppColors.neutral}
-      style={[styles.textField, getTypography(appRole).bodyLG, style]}
+      style={[styles.textField, T.bodyLG, style]}
       {...props}
     />
   );
@@ -159,7 +162,7 @@ export function InfoBanner({
   message?: string;
   appRole?: AppRole;
 }) {
-  const T = getTypography(appRole);
+  const T = useTypography(appRole);
   return (
     <View style={styles.infoBanner}>
       <Ionicons name="information-circle-outline" size={18} color={AppColors.inkSecondary} style={{ marginTop: 2 }} />

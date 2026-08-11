@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
 import { AppSpacing } from '../theme/spacing';
-import { getTypography, type AppRole } from '../theme/typography';
+import { type AppRole } from '../theme/typography';
+import { useTypography } from '../state/AppState';
 import { MARKETING_CONSENT_TEXT, PRIVACY_POLICY_TEXT, TERMS_OF_SERVICE_TEXT } from '../data/legalDocs';
 
 interface AgreementItem {
@@ -27,7 +28,7 @@ export default function AgreementSection({
   onRequiredAgreedChange: (allRequiredAgreed: boolean) => void;
   appRole?: AppRole;
 }) {
-  const T = getTypography(appRole);
+  const T = useTypography(appRole);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [viewingItem, setViewingItem] = useState<AgreementItem | null>(null);
 
@@ -91,7 +92,7 @@ export default function AgreementSection({
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.modalScrollContent}>
-            <Text style={[T.bodyLG, { color: AppColors.inkSecondary, lineHeight: appRole === 'owner' ? 25 : 22 }]}>
+            <Text style={[T.bodyLG, { color: AppColors.inkSecondary, lineHeight: (T.bodyLG.fontSize ?? 14) + 8 }]}>
               {viewingItem?.content}
             </Text>
           </ScrollView>

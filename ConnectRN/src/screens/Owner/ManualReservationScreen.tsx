@@ -1,14 +1,13 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { OwnerTypography as Typography } from '../../theme/typography';
 import { defaultTimeSlots, ownerStore } from '../../models/mockData';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { FormLabel, InfoBanner } from '../../components/CommonComponents';
 import { parseDateKey } from '../../utils/date';
 
@@ -34,6 +33,8 @@ export default function ManualReservationScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { myReservations, setMyReservations } = useAppState();
+  const Typography = useTypography('owner');
+  const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
   const selectedDate = useMemo(
     () => (route.params?.dateKey ? parseDateKey(route.params.dateKey) : new Date()),
@@ -227,65 +228,66 @@ export default function ManualReservationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: AppColors.surface },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: AppSpacing.s18,
-    paddingVertical: AppSpacing.s14,
-  },
-  topBarTitle: { ...Typography.titleMD, color: AppColors.ink },
-  scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s20 },
-  field: { gap: AppSpacing.s10 },
-  fieldTitle: { ...Typography.titleMD, color: AppColors.ink },
-  selectedDateBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: AppSpacing.s8,
-    padding: AppSpacing.s14,
-    backgroundColor: AppColors.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: AppColors.borderStrong,
-  },
-  selectedDateText: { ...Typography.headlineSM, color: AppColors.ink },
-  timeSelectorHeader: { flexDirection: 'row', alignItems: 'baseline', gap: AppSpacing.s6 },
-  timeSelectorHint: { ...Typography.labelMD, color: AppColors.inkSecondary },
-  timeRangeLabel: { ...Typography.labelMD, color: AppColors.primaryDeep },
-  timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: AppSpacing.s8 },
-  timeCell: {
-    width: '31%',
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  timeCellText: { ...Typography.bodyLG, color: AppColors.ink },
-  inputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: AppSpacing.s8,
-    padding: AppSpacing.s14,
-    backgroundColor: AppColors.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: AppColors.borderStrong,
-  },
-  peopleInput: { ...Typography.headlineSM, color: AppColors.ink, flexShrink: 0, minWidth: 40 },
-  inputSuffix: { ...Typography.bodyLG, color: AppColors.inkSecondary },
-  textInput: { ...Typography.bodyLG, color: AppColors.ink, flex: 1 },
-  keywordHeaderRow: { flexDirection: 'row', alignItems: 'center' },
-  memoCountText: { ...Typography.labelMD, color: AppColors.inkSecondary },
-  footer: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s12 },
-  submitButton: {
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: AppColors.primary,
-    borderRadius: AppRadius.pill,
-  },
-  submitButtonText: { ...Typography.titleMD, color: AppColors.ink },
-});
+const makeStyles = (Typography: Record<string, TextStyle>) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: AppColors.surface },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: AppSpacing.s18,
+      paddingVertical: AppSpacing.s14,
+    },
+    topBarTitle: { ...Typography.titleMD, color: AppColors.ink },
+    scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s20 },
+    field: { gap: AppSpacing.s10 },
+    fieldTitle: { ...Typography.titleMD, color: AppColors.ink },
+    selectedDateBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: AppSpacing.s8,
+      padding: AppSpacing.s14,
+      backgroundColor: AppColors.white,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: AppColors.borderStrong,
+    },
+    selectedDateText: { ...Typography.headlineSM, color: AppColors.ink },
+    timeSelectorHeader: { flexDirection: 'row', alignItems: 'baseline', gap: AppSpacing.s6 },
+    timeSelectorHint: { ...Typography.labelMD, color: AppColors.inkSecondary },
+    timeRangeLabel: { ...Typography.labelMD, color: AppColors.primaryDeep },
+    timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: AppSpacing.s8 },
+    timeCell: {
+      width: '31%',
+      minHeight: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 10,
+      borderWidth: 1,
+    },
+    timeCellText: { ...Typography.bodyLG, color: AppColors.ink },
+    inputBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: AppSpacing.s8,
+      padding: AppSpacing.s14,
+      backgroundColor: AppColors.white,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: AppColors.borderStrong,
+    },
+    peopleInput: { ...Typography.headlineSM, color: AppColors.ink, flexShrink: 0, minWidth: 40 },
+    inputSuffix: { ...Typography.bodyLG, color: AppColors.inkSecondary },
+    textInput: { ...Typography.bodyLG, color: AppColors.ink, flex: 1 },
+    keywordHeaderRow: { flexDirection: 'row', alignItems: 'center' },
+    memoCountText: { ...Typography.labelMD, color: AppColors.inkSecondary },
+    footer: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s12 },
+    submitButton: {
+      minHeight: 52,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: AppColors.primary,
+      borderRadius: AppRadius.pill,
+    },
+    submitButtonText: { ...Typography.titleMD, color: AppColors.ink },
+  });

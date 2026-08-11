@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
 import { AppSpacing } from '../theme/spacing';
-import { getTypography, type AppRole } from '../theme/typography';
+import { type AppRole } from '../theme/typography';
+import { useTypography } from '../state/AppState';
 
 interface InteractiveUploaderProps {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -25,6 +26,7 @@ export default function InteractiveUploader({
   onPicked,
   appRole = 'booker',
 }: InteractiveUploaderProps) {
+  const T = useTypography(appRole);
   const [pickedLabel, setPickedLabel] = useState<string | null>(null);
 
   const pickPhoto = async () => {
@@ -83,14 +85,14 @@ export default function InteractiveUploader({
       />
       <Text
         style={[
-          getTypography(appRole).titleMD,
+          T.titleMD,
           styles.titleBase,
           { color: pickedLabel === null ? AppColors.primaryDeep : AppColors.ink },
         ]}
       >
         {pickedLabel ?? title}
       </Text>
-      <Text style={[getTypography(appRole).bodyMD, styles.subtitle]}>
+      <Text style={[T.bodyMD, styles.subtitle]}>
         {pickedLabel === null ? subtitle : '다시 누르면 변경할 수 있어요'}
       </Text>
     </Pressable>

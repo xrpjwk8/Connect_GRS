@@ -2,7 +2,8 @@ import React from 'react';
 import { Pressable, PressableProps, StyleSheet, Text, TextStyle } from 'react-native';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
-import { getTypography, type AppRole } from '../theme/typography';
+import { type AppRole } from '../theme/typography';
+import { useTypography } from '../state/AppState';
 
 interface AppButtonProps extends PressableProps {
   title: string;
@@ -11,6 +12,7 @@ interface AppButtonProps extends PressableProps {
 }
 
 export function PrimaryFilledButton({ title, style, appRole = 'booker', ...props }: AppButtonProps) {
+  const T = useTypography(appRole);
   return (
     <Pressable
       {...props}
@@ -21,12 +23,13 @@ export function PrimaryFilledButton({ title, style, appRole = 'booker', ...props
         typeof style === 'function' ? style(state) : style,
       ]}
     >
-      <Text style={[getTypography(appRole).titleMD, { color: AppColors.white }]}>{title}</Text>
+      <Text style={[T.titleMD, { color: AppColors.white }]}>{title}</Text>
     </Pressable>
   );
 }
 
 export function LimeButton({ title, style, appRole = 'booker', ...props }: AppButtonProps) {
+  const T = useTypography(appRole);
   return (
     <Pressable
       {...props}
@@ -37,12 +40,13 @@ export function LimeButton({ title, style, appRole = 'booker', ...props }: AppBu
         typeof style === 'function' ? style(state) : style,
       ]}
     >
-      <Text style={[getTypography(appRole).titleMD, { color: AppColors.ink }]}>{title}</Text>
+      <Text style={[T.titleMD, { color: AppColors.ink }]}>{title}</Text>
     </Pressable>
   );
 }
 
 export function GhostButton({ title, style, textStyle, appRole = 'booker', ...props }: AppButtonProps) {
+  const T = useTypography(appRole);
   return (
     <Pressable
       {...props}
@@ -53,7 +57,7 @@ export function GhostButton({ title, style, textStyle, appRole = 'booker', ...pr
         typeof style === 'function' ? style(state) : style,
       ]}
     >
-      <Text style={[getTypography(appRole).titleMD, { color: AppColors.ink }, textStyle]}>{title}</Text>
+      <Text style={[T.titleMD, { color: AppColors.ink }, textStyle]}>{title}</Text>
     </Pressable>
   );
 }

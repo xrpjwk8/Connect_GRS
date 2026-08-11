@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../theme/colors';
-import { OwnerTypography } from '../theme/typography';
+import { useTypography } from '../state/AppState';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -68,6 +68,7 @@ function StoreProfileStackNavigator() {
 const Tab = createBottomTabNavigator();
 
 export default function OwnerTabNavigator() {
+  const T = useTypography('owner');
   return (
     <Tab.Navigator
       screenOptions={{
@@ -75,8 +76,8 @@ export default function OwnerTabNavigator() {
         tabBarActiveTintColor: AppColors.primaryDeep,
         tabBarStyle: { backgroundColor: AppColors.white },
         tabBarLabelStyle: {
-          fontSize: OwnerTypography.labelSM.fontSize,
-          fontWeight: OwnerTypography.labelSM.fontWeight,
+          fontSize: T.labelSM.fontSize,
+          fontWeight: T.labelSM.fontWeight,
         },
       }}
     >
