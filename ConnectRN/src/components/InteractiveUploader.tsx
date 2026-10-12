@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
 import { AppSpacing } from '../theme/spacing';
-import { Typography } from '../theme/typography';
+import { type AppRole } from '../theme/typography';
+import { useTypography } from '../state/AppState';
 
 interface InteractiveUploaderProps {
   icon: React.ComponentProps<typeof Ionicons>['name'];
@@ -14,6 +15,7 @@ interface InteractiveUploaderProps {
   subtitle: string;
   allowsFiles?: boolean;
   onPicked?: (uri: string, label: string) => void;
+  appRole?: AppRole;
 }
 
 export default function InteractiveUploader({
@@ -22,7 +24,9 @@ export default function InteractiveUploader({
   subtitle,
   allowsFiles = false,
   onPicked,
+  appRole = 'booker',
 }: InteractiveUploaderProps) {
+  const T = useTypography(appRole);
   const [pickedLabel, setPickedLabel] = useState<string | null>(null);
 
   const pickPhoto = async () => {
@@ -79,10 +83,18 @@ export default function InteractiveUploader({
         size={28}
         color={pickedLabel === null ? AppColors.inkSecondary : AppColors.primaryDeep}
       />
-      <Text style={[styles.title, { color: pickedLabel === null ? AppColors.primaryDeep : AppColors.ink }]}>
+      <Text
+        style={[
+          T.titleMD,
+          styles.titleBase,
+          { color: pickedLabel === null ? AppColors.primaryDeep : AppColors.ink },
+        ]}
+      >
         {pickedLabel ?? title}
       </Text>
-      <Text style={styles.subtitle}>{pickedLabel === null ? subtitle : '다시 누르면 변경할 수 있어요'}</Text>
+      <Text style={[T.bodyMD, styles.subtitle]}>
+        {pickedLabel === null ? subtitle : '다시 누르면 변경할 수 있어요'}
+      </Text>
     </Pressable>
   );
 }
@@ -99,6 +111,6 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: AppColors.outlineVariant,
   },
-  title: { ...Typography.titleMD, textAlign: 'center' },
-  subtitle: { ...Typography.bodyMD, color: AppColors.neutral },
+  titleBase: { textAlign: 'center' },
+  subtitle: { color: AppColors.neutral },
 });

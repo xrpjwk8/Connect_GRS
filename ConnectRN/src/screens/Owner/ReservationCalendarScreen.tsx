@@ -1,14 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { Typography } from '../../theme/typography';
 import { ownerStore } from '../../models/mockData';
-import { useAppState } from '../../state/AppState';
+import { useAppState, useTypography } from '../../state/AppState';
 import { PrimaryFilledButton } from '../../components/Buttons';
 import Card from '../../components/Card';
 import { dateKey, isSameDay } from '../../utils/date';
@@ -42,6 +41,8 @@ export default function ReservationCalendarScreen() {
   const [viewMonth, setViewMonth] = useState(startOfMonth(today));
   const [selectedDate, setSelectedDate] = useState(today);
   const { myReservations, blockedSlotsByDate } = useAppState();
+  const Typography = useTypography('owner');
+  const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
   const storeReservations = useMemo(
     () =>
@@ -74,8 +75,6 @@ export default function ReservationCalendarScreen() {
             <Ionicons name="storefront-outline" size={16} color={AppColors.primaryDeep} />
           </View>
           <Text style={styles.headerTitle}>캠퍼스 커넥트 비즈니스</Text>
-          <View style={{ flex: 1 }} />
-          <Ionicons name="notifications-outline" size={18} color={AppColors.ink} />
         </View>
 
         <View style={styles.introBlock}>
@@ -182,6 +181,7 @@ export default function ReservationCalendarScreen() {
         <PrimaryFilledButton
           title="+ 새 예약 등록"
           onPress={() => navigation.navigate('ManualReservation', { dateKey: dateKey(selectedDate) })}
+          appRole="owner"
         />
 
         <Text style={styles.reservationCount}>
@@ -191,14 +191,14 @@ export default function ReservationCalendarScreen() {
         {monthReservations.length === 0 ? (
           <Text style={styles.emptyText}>이번 달 예약이 없어요.</Text>
         ) : (
-          monthReservations.map((r) => <OwnerReservationCard key={r.id} r={r} />)
+          monthReservations.map((r) => <OwnerReservationCard key={r.id} r={r} styles={styles} />)
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function OwnerReservationCard({ r }: { r: MyReservation }) {
+function OwnerReservationCard({ r, styles }: { r: MyReservation; styles: ReturnType<typeof makeStyles> }) {
   const confirmed = r.status === 'confirmed';
   return (
     <Card padding={14} style={{ gap: 10 }}>
@@ -233,7 +233,8 @@ function OwnerReservationCard({ r }: { r: MyReservation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (Typography: Record<string, TextStyle>) =>
+  StyleSheet.create({
   container: { flex: 1, backgroundColor: AppColors.surface },
   scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s8, gap: AppSpacing.s18 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: AppSpacing.s10 },
