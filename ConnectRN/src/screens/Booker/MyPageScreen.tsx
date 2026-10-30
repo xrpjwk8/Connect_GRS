@@ -12,11 +12,11 @@ import { GhostButton } from '../../components/Buttons';
 
 export default function MyPageScreen() {
   const navigation = useNavigation<any>();
-  const { schoolName, departmentName, position, realName, profileImageUri, logout } = useAppState();
+  const { schoolName, departmentName, position, realName, profileImageUri, logout, isPreview } = useAppState();
 
-  const affiliationLabel = `${schoolName || '연세대학교'} ${departmentName || '경영학과'}`;
-  const nameLabel = `${position || '부회장'} ${realName || '김재원'}`;
-  const avatarInitial = realName ? realName[0] : '원';
+  const affiliationLabel = [schoolName, departmentName].filter(Boolean).join(' ');
+  const nameLabel = [position, realName].filter(Boolean).join(' ');
+  const avatarInitial = realName ? realName[0] : '?';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -35,10 +35,10 @@ export default function MyPageScreen() {
           )}
           <View style={{ flex: 1, gap: 4 }}>
             <View style={styles.affiliationRow}>
-              <Text style={styles.affiliationText}>{affiliationLabel}</Text>
-              <Ionicons name="checkmark-circle" size={12} color={AppColors.primaryDeep} />
+              <Text style={styles.affiliationText}>{affiliationLabel || '학교 정보 미입력'}</Text>
             </View>
-            <Text style={styles.nameText}>{nameLabel}</Text>
+            <Text style={styles.nameText}>{nameLabel || '테스트 사용자'}</Text>
+            {isPreview && <Text style={styles.affiliationText}>학생증 미인증</Text>}
           </View>
           <Ionicons name="chevron-forward" size={18} color={AppColors.inkSecondary} />
         </Pressable>

@@ -1,3 +1,7 @@
+import { rpc } from '../../services/backend';
+import { useServerAction, useRefreshOnFocus } from '../../hooks/useServer';
+import { showAlert } from '../../utils/alert';
+import DataStatus from '../../components/DataStatus';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,22 +9,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { ownerStore } from '../../models/mockData';
 import { useAppState, useTypography } from '../../state/AppState';
 import { TagLabel } from '../../components/CommonComponents';
 import type { MyReservation } from '../../models/types';
 
 export default function OwnerDashboardScreen() {
-  const { myReservations, setMyReservations } = useAppState();
+  const { myReservations, ownerStore } = useAppState();
+  const action = useServerAction();
+  useRefreshOnFocus();
   const Typography = useTypography('owner');
   const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
   const requests = useMemo(
     () =>
       myReservations
-        .filter((r) => r.storeId === ownerStore.id && r.status === 'pending')
+        .filter((r) => r.storeId === ownerStore?.id && r.status === 'pending')
         .sort((a, b) => (a.dateValue?.getTime() ?? 0) - (b.dateValue?.getTime() ?? 0)),
-    [myReservations]
+    [myReservations, ownerStore?.id]
   );
 
   const upcoming = useMemo(() => {
@@ -29,29 +34,29 @@ export default function OwnerDashboardScreen() {
     return myReservations
       .filter(
         (r) =>
-          r.storeId === ownerStore.id &&
+          r.storeId === ownerStore?.id &&
           r.status === 'confirmed' &&
           r.dateValue &&
-          r.dateValue.getTime() >= now &&
+          (r.startsAt ? Date.parse(r.startsAt) : r.dateValue.getTime()) >= now &&
           r.dateValue.getTime() <= sevenDaysLater
       )
       .sort((a, b) => (a.dateValue?.getTime() ?? 0) - (b.dateValue?.getTime() ?? 0));
-  }, [myReservations]);
+  }, [myReservations, ownerStore?.id]);
 
   const decide = (id: string, decision: 'confirmed' | 'rejected') => {
-    setMyReservations(myReservations.map((r) => (r.id === id ? { ...r, status: decision } : r)));
+    void action.run(() => rpc('decide_reservation', { p_reservation_id: id, p_accept: decision === 'confirmed' }));
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent}><DataStatus />
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Connect</Text>
         </View>
 
         <View style={styles.storeRow}>
           <Ionicons name="storefront-outline" size={16} color={AppColors.inkSecondary} />
-          <Text style={styles.storeRowText}>{`[${ownerStore.location}] ${ownerStore.name}`}</Text>
+          <Text style={styles.storeRowText}>{`[${ownerStore?.location}] ${ownerStore?.name}`}</Text>
         </View>
 
         <View style={styles.sectionTitleRow}>
@@ -67,8 +72,8 @@ export default function OwnerDashboardScreen() {
               <RequestCard
                 key={req.id}
                 req={req}
-                onAccept={() => decide(req.id, 'confirmed')}
-                onReject={() => decide(req.id, 'rejected')}
+                onAccept={() => !action.busy && decide(req.id, 'confirmed')}
+                onReject={() => !action.busy && decide(req.id, 'rejected')}
                 styles={styles}
               />
             ))

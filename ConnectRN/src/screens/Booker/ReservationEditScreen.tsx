@@ -1,8 +1,14 @@
+import { serviceDate, slotSelection, minuteLabel } from '../../utils/reservation';
+import { supabase } from '../../lib/supabase';
+import { rpc } from '../../services/backend';
+import { useServerAction, useRefreshOnFocus, useServerQuery } from '../../hooks/useServer';
+import { showAlert } from '../../utils/alert';
+import DataStatus from '../../components/DataStatus';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from '../../components/AppDatePicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
@@ -11,26 +17,7 @@ import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { GhostButton, LimeButton } from '../../components/Buttons';
 
-const TIME_ROWS: string[][] = [
-  ['17:00', '17:30', '18:00', '18:30'],
-  ['19:00', '19:30', '20:00', '20:30'],
-  ['21:00', '21:30', '22:00', '22:30'],
-  ['23:00', '23:30', '24:00', ''],
-];
 const MAX_CONSECUTIVE_SLOTS = 6;
-const ALL_TIMES = TIME_ROWS.flat().filter((t) => t !== '');
-const WEEKDAY_LETTERS = ['일', '월', '화', '수', '목', '금', '토'];
-
-function addThirtyMinutes(timeString: string): string {
-  const [hourStr, minuteStr] = timeString.split(':');
-  const hour = Number(hourStr);
-  const minute = Number(minuteStr);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) return timeString;
-  const totalMinutes = hour * 60 + minute + 30;
-  const newHour = Math.floor(totalMinutes / 60) % 24;
-  const newMinute = totalMinutes % 60;
-  return `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`;
-}
 
 function startOfToday(): Date {
   const d = new Date();
@@ -42,12 +29,28 @@ export default function ReservationEditScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const reservationId: string = route.params.reservationId;
-  const { myReservations, setMyReservations } = useAppState();
+  const { myReservations } = useAppState();
+  const action = useServerAction();
+  useRefreshOnFocus();
 
   const currentReservation = useMemo(
     () => myReservations.find((r) => r.id === reservationId),
     [myReservations, reservationId]
   );
+
+  const storeQuery = useServerQuery(currentReservation?.storeId ?? '', async () => {
+    if (!currentReservation?.storeId) return null;
+    const { data, error } = await supabase.from('stores').select('*').eq('id', currentReservation.storeId).maybeSingle();
+    if (error) throw error;
+    return data;
+  });
+  const ALL_TIMES = useMemo(() => {
+    const store = storeQuery.data;
+    if (!store) return [];
+    return Array.from({ length: (store.closing_minute - store.opening_minute) / 30 }, (_, i) => minuteLabel(store.opening_minute + i * 30));
+  }, [storeQuery.data]);
+  const TIME_ROWS = Array.from({ length: Math.ceil(ALL_TIMES.length / 4) }, (_, i) => ALL_TIMES.slice(i * 4, i * 4 + 4));
+  const initialized = useRef<string | null>(null);
 
   const [date, setDate] = useState(new Date());
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
@@ -58,7 +61,8 @@ export default function ReservationEditScreen() {
   const [requestMessage, setRequestMessage] = useState('');
 
   useEffect(() => {
-    if (!currentReservation) return;
+    if (!currentReservation || initialized.current === reservationId) return;
+    initialized.current = reservationId;
     setDate(currentReservation.dateValue ?? new Date());
     setSelectedTimes(currentReservation.timeLabels);
     setPeopleText(String(currentReservation.people));
@@ -66,7 +70,7 @@ export default function ReservationEditScreen() {
     setEventPurpose(currentReservation.eventPurpose);
     setRequestMessage(currentReservation.requestMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reservationId]);
+  }, [reservationId, currentReservation]);
 
   const toggleTime = (t: string) => {
     const idx = ALL_TIMES.indexOf(t);
@@ -94,17 +98,17 @@ export default function ReservationEditScreen() {
   const selectedTimeRangeLabel = useMemo(() => {
     const sorted = [...selectedTimes].sort((a, b) => ALL_TIMES.indexOf(a) - ALL_TIMES.indexOf(b));
     if (sorted.length === 0) return '';
-    return `${sorted[0]} ~ ${addThirtyMinutes(sorted[sorted.length - 1])} (${sorted.length}칸)`;
-  }, [selectedTimes]);
+    return `${sorted[0]} ~ ${minuteLabel(Number(sorted[sorted.length - 1].split(':')[0]) * 60 + Number(sorted[sorted.length - 1].split(':')[1]) + 30)} (${sorted.length}칸)`;
+  }, [selectedTimes, ALL_TIMES]);
 
   const handleSave = () => {
     const peopleNum = Number(peopleText) || 0;
     if (peopleNum < 1) {
-      Alert.alert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
+      showAlert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
       return;
     }
     if (selectedTimes.length === 0) {
-      Alert.alert('입력을 확인해주세요', '예약 시간을 선택해주세요.');
+      showAlert('입력을 확인해주세요', '예약 시간을 선택해주세요.');
       return;
     }
     if (!currentReservation) {
@@ -112,39 +116,17 @@ export default function ReservationEditScreen() {
       return;
     }
 
-    Alert.alert('예약을 수정하시겠습니까?', '변경한 내용으로 예약 정보가 저장돼요.', [
+    showAlert('예약을 수정하시겠습니까?', '수정하면 점주의 재승인이 필요하며, 기존에 확보한 좌석은 해제됩니다.', [
       { text: '아니요', style: 'cancel' },
       { text: '예, 수정합니다', onPress: () => submitSave(peopleNum) },
     ]);
   };
 
-  const submitSave = (peopleNum: number) => {
-    const sorted = [...selectedTimes].sort((a, b) => ALL_TIMES.indexOf(a) - ALL_TIMES.indexOf(b));
-    const timeLabel =
-      sorted.length === 1 ? sorted[0] : `${sorted[0]} ~ ${addThirtyMinutes(sorted[sorted.length - 1])}`;
-    const dateLabel = `${date.getMonth() + 1}/${date.getDate()} (${WEEKDAY_LETTERS[date.getDay()]}) ${timeLabel}`;
-
-    setMyReservations(
-      myReservations.map((r) =>
-        r.id === reservationId
-          ? {
-              ...r,
-              dateLabel,
-              people: peopleNum,
-              budget: budgetText ? Number(budgetText) : undefined,
-              dateValue: date,
-              timeLabels: sorted,
-              eventPurpose,
-              requestMessage,
-            }
-          : r
-      )
-    );
-
-    Alert.alert('변경 사항이 저장되었습니다', "'내 예약' 목록에서 변경된 정보를 확인할 수 있어요.", [
-      { text: '확인', onPress: () => navigation.goBack() },
-    ]);
-  };
+  const submitSave = (peopleNum: number) => action.run(async () => {
+    await rpc('edit_reservation', { p_reservation_id: reservationId, p_service_date: serviceDate(date), ...slotSelection(selectedTimes),
+      p_people: peopleNum, p_budget_per_person: budgetText ? Number(budgetText) : undefined,
+      p_event_purpose: eventPurpose, p_request_message: requestMessage });
+  }, () => showAlert('수정 요청 완료', '점주의 재승인을 기다려주세요.', [{ text: '확인', onPress: () => navigation.goBack() }]));
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -158,6 +140,9 @@ export default function ReservationEditScreen() {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <DataStatus />
+        {storeQuery.loading && <Text>영업시간을 불러오는 중…</Text>}
+        {storeQuery.error && <GhostButton title="영업시간 다시 불러오기" onPress={storeQuery.reload} />}
         <View style={styles.storeHeaderRow}>
           <View style={styles.storeThumb}>
             <Ionicons name={(currentReservation?.imageSymbol as any) ?? 'restaurant-outline'} size={22} color="rgba(255,255,255,0.7)" />
@@ -292,7 +277,7 @@ export default function ReservationEditScreen() {
 
       <View style={styles.bottomBar}>
         <GhostButton title="취소" style={{ flex: 1 }} onPress={() => navigation.goBack()} />
-        <LimeButton title="변경 저장" style={{ flex: 1, borderRadius: AppRadius.lg }} onPress={handleSave} />
+        <LimeButton title="변경 저장" style={{ flex: 1, borderRadius: AppRadius.lg }} onPress={handleSave} disabled={action.busy || !storeQuery.data || !currentReservation} />
       </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -212,6 +212,18 @@ struct BookerSignUpView: View {
 
     // MARK: - 백엔드 연동
     private func submit() async {
+        guard !isSubmitting else { return }
+        #if DEBUG
+        if APIConfig.isOfflinePreview {
+            appState.schoolName = schoolName
+            appState.departmentName = departmentName
+            appState.position = position
+            appState.realName = realName.isEmpty ? "개발 예약자" : realName
+            appState.schoolEmail = schoolEmail
+            appState.finishBookerSignUp()
+            return
+        }
+        #endif
         isSubmitting = true
         errorMessage = nil
         defer { isSubmitting = false }

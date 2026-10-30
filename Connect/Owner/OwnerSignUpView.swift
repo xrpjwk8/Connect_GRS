@@ -144,6 +144,15 @@ struct OwnerSignUpView: View {
 
     // MARK: - 백엔드 연동
     private func submit() async {
+        guard !isSubmitting else { return }
+        #if DEBUG
+        if APIConfig.isOfflinePreview {
+            appState.realName = ownerName.isEmpty ? "개발 점주" : ownerName
+            appState.phoneNumber = contact
+            appState.finishOwnerSignUp()
+            return
+        }
+        #endif
         isSubmitting = true
         errorMessage = nil
         defer { isSubmitting = false }

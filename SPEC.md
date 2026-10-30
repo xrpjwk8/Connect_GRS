@@ -2,6 +2,8 @@
 
 > iOS 네이티브 앱 (SwiftUI) · Firebase 기반 · 점주 ↔ 예약자 매칭 서비스
 
+> **2026-10-13 개발 방향 변경:** 최신 앱은 `ConnectRN`(Expo)이며, 서버를 Supabase로 전환 중입니다. 아래 기존 화면 명세의 완료 표시는 주로 Mock 기반 UI 상태입니다. 단계별 서버 구현·예약 정책·검증 기준은 [Supabase 서버 개발 계획](docs/SUPABASE_MIGRATION_PLAN.md)을 기준으로 합니다.
+
 ---
 
 ## 1. 서비스 개요

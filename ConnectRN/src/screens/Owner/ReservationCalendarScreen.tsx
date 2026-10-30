@@ -1,3 +1,5 @@
+import { useRefreshOnFocus } from '../../hooks/useServer';
+import DataStatus from '../../components/DataStatus';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,7 +8,6 @@ import { useNavigation } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { ownerStore } from '../../models/mockData';
 import { useAppState, useTypography } from '../../state/AppState';
 import { PrimaryFilledButton } from '../../components/Buttons';
 import Card from '../../components/Card';
@@ -40,16 +41,17 @@ export default function ReservationCalendarScreen() {
   const today = useMemo(() => startOfDay(new Date()), []);
   const [viewMonth, setViewMonth] = useState(startOfMonth(today));
   const [selectedDate, setSelectedDate] = useState(today);
-  const { myReservations, blockedSlotsByDate } = useAppState();
+  useRefreshOnFocus();
+  const { ownerStore, myReservations, blockedSlotsByDate } = useAppState();
   const Typography = useTypography('owner');
   const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
   const storeReservations = useMemo(
     () =>
       myReservations.filter(
-        (r) => r.storeId === ownerStore.id && (r.status === 'confirmed' || r.status === 'pending')
+        (r) => r.storeId === ownerStore?.id && (r.status === 'confirmed' || r.status === 'pending')
       ),
-    [myReservations]
+    [myReservations, ownerStore?.id]
   );
 
   const monthReservations = useMemo(
@@ -69,7 +71,7 @@ export default function ReservationCalendarScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent}><DataStatus />
         <View style={styles.headerRow}>
           <View style={styles.storeIconBadge}>
             <Ionicons name="storefront-outline" size={16} color={AppColors.primaryDeep} />

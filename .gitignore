@@ -34,3 +34,10 @@ build/
 *.ipa
 *.dSYM.zip
 *.dSYM
+
+# Local Supabase state and credentials
+supabase/.temp/
+supabase/.branches/
+.env
+.env.*
+!.env.example

@@ -6,7 +6,9 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { defaultTimeSlots, ownerStore } from '../../models/mockData';
+import { rpc } from '../../services/backend';
+import { minuteLabel, serviceDate, timeMinute } from '../../utils/reservation';
+import { useServerAction, useServerQuery } from '../../hooks/useServer';
 import { useAppState, useTypography } from '../../state/AppState';
 import { InfoBanner } from '../../components/CommonComponents';
 import { dateKey, isSameDay, parseDateKey } from '../../utils/date';
@@ -27,7 +29,8 @@ function buildWeekDays(start: Date): Date[] {
 export default function TimeBlockScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { myReservations, capacityOverbookingEnabled, blockedSlotsByDate, setBlockedSlotsByDate } = useAppState();
+  const { myReservations, capacityOverbookingEnabled, blockedSlotsByDate, ownerStore } = useAppState();
+  const action = useServerAction();
   const Typography = useTypography('owner');
   const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
@@ -35,42 +38,24 @@ export default function TimeBlockScreen() {
   const weekDays = useMemo(() => buildWeekDays(requestedStart ? parseDateKey(requestedStart) : new Date()), [requestedStart]);
   const [selectedDate, setSelectedDate] = useState(weekDays[0]);
 
-  // 확정된 예약이 그 시간대 정원을 얼마나 채웠는지 (시작 시각별 합산 인원)
-  const bookedPeopleByStart = useMemo(() => {
-    const map = new Map<string, number>();
-    myReservations.forEach((r) => {
-      if (r.storeId !== ownerStore.id || r.status !== 'confirmed' || !r.dateValue) return;
-      if (!isSameDay(r.dateValue, selectedDate)) return;
-      r.timeLabels.forEach((t) => map.set(t, (map.get(t) ?? 0) + r.people));
-    });
-    return map;
-  }, [myReservations, selectedDate]);
-
-  const blockedStarts = new Set(blockedSlotsByDate[dateKey(selectedDate)] ?? []);
-
-  const slots: (TimeSlot & { booked: number })[] = useMemo(
-    () =>
-      defaultTimeSlots.map((slot) => {
-        const start = slot.label.split(' ~ ')[0];
-        const booked = bookedPeopleByStart.get(start) ?? 0;
-        if (slot.state === 'closed') return { ...slot, booked };
-        const isFull = capacityOverbookingEnabled ? booked >= ownerStore.maxCapacity : booked > 0;
-        let state: TimeSlotState = 'available';
-        if (isFull) state = 'reserved';
-        else if (blockedStarts.has(start)) state = 'blocked';
-        return { ...slot, state, booked };
-      }),
-    [bookedPeopleByStart, blockedStarts, capacityOverbookingEnabled]
-  );
-
+  const availability = useServerQuery(`${ownerStore?.id}:${serviceDate(selectedDate)}:${JSON.stringify(blockedSlotsByDate)}:${JSON.stringify(myReservations)}`, () => {
+    if (!ownerStore) throw new Error('매장을 찾을 수 없습니다.');
+    return rpc('get_availability', { p_store_id: ownerStore.id, p_service_date: serviceDate(selectedDate) });
+  });
+  const slots: (TimeSlot & { booked: number })[] = (availability.data ?? []).map(a => {
+    const start = Date.parse(`${serviceDate(selectedDate)}T00:00:00+09:00`) + a.start_minute * 60000;
+    const booked = myReservations.filter(r => r.storeId === ownerStore?.id && r.status === 'confirmed'
+      && r.startsAt && r.endsAt && Date.parse(r.startsAt) < start + 1800000 && Date.parse(r.endsAt) > start).reduce((sum, r) => sum + r.people, 0);
+    return { id: String(a.start_minute), label: `${minuteLabel(a.start_minute)} ~ ${minuteLabel(a.start_minute + 30)}`,
+      booked, state: start <= Date.now() ? 'closed' : a.blocked ? 'blocked' : a.remaining_seats === 0 ? 'reserved' : 'available' };
+  });
   const toggle = (slot: TimeSlot) => {
-    if (slot.state === 'closed' || slot.state === 'reserved') return;
+    if (!ownerStore || slot.state === 'closed' || slot.state === 'reserved') return;
+    const current = new Set(blockedSlotsByDate[dateKey(selectedDate)] ?? []);
     const start = slot.label.split(' ~ ')[0];
-    const key = dateKey(selectedDate);
-    const current = new Set(blockedSlotsByDate[key] ?? []);
-    if (current.has(start)) current.delete(start);
-    else current.add(start);
-    setBlockedSlotsByDate({ ...blockedSlotsByDate, [key]: Array.from(current) });
+    if (current.has(start)) current.delete(start); else current.add(start);
+    void action.run(() => rpc('replace_time_blocks', { p_store_id: ownerStore.id,
+      p_service_date: serviceDate(selectedDate), p_start_minutes: [...current].map(timeMinute) }), availability.reload);
   };
 
   return (
@@ -134,14 +119,16 @@ export default function TimeBlockScreen() {
         </View>
 
         <View style={styles.slotGrid}>
+          {availability.loading ? <Text>시간표를 불러오고 있어요.</Text> : null}
+          {availability.error ? <Pressable onPress={availability.reload}><Text>{availability.error} · 다시 시도</Text></Pressable> : null}
           {slots.map((slot) => (
-            <TimeSlotCell key={slot.id} slot={slot} onPress={() => toggle(slot)} styles={styles} />
+            <TimeSlotCell key={slot.id} slot={slot} onPress={() => !action.busy && toggle(slot)} styles={styles} />
           ))}
         </View>
       </ScrollView>
 
       <Pressable style={styles.saveButton} onPress={() => navigation.goBack()}>
-        <Text style={styles.saveButtonText}>변경사항 저장</Text>
+        <Text style={styles.saveButtonText}>닫기</Text>
       </Pressable>
     </SafeAreaView>
   );
@@ -157,6 +144,7 @@ function TimeSlotCell({
   styles: ReturnType<typeof makeStyles>;
 }) {
   const isClosed = slot.state === 'closed';
+  const { ownerStore } = useAppState();
   const isBlocked = slot.state === 'blocked';
   const isReserved = slot.state === 'reserved';
   const backgroundColor = isClosed
@@ -170,9 +158,9 @@ function TimeSlotCell({
   const textColor = isClosed ? AppColors.neutral : isBlocked || isReserved ? AppColors.white : AppColors.ink;
 
   const subLabel = isReserved
-    ? `정원 마감 ${slot.booked}/${ownerStore.maxCapacity}명`
+    ? `정원 마감 ${slot.booked}/${ownerStore?.maxCapacity}명`
     : slot.booked > 0
-    ? `${slot.booked}/${ownerStore.maxCapacity}명 예약됨`
+    ? `${slot.booked}/${ownerStore?.maxCapacity}명 예약됨`
     : null;
 
   return (

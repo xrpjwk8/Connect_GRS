@@ -18,6 +18,12 @@ export const ReservationStatusLabel: Record<ReservationStatus, string> = {
 };
 
 export interface Store {
+  approved?: boolean;
+  openingMinute?: number;
+  closingMinute?: number;
+  allowShared?: boolean;
+  description?: string;
+  metricsAvailable?: boolean;
   id: string;
   name: string;
   category: string;
@@ -33,6 +39,8 @@ export interface Store {
 }
 
 export interface MyReservation {
+  startsAt?: string;
+  endsAt?: string;
   id: string;
   storeId?: string;
   storeName: string;

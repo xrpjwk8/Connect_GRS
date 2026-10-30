@@ -7,18 +7,17 @@ import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { useAppState, useTypography } from '../../state/AppState';
-import { ownerStore } from '../../models/mockData';
 import type { ChatMessage, MyReservation } from '../../models/types';
 
 export default function ChatListScreen() {
   const navigation = useNavigation<any>();
-  const { selectedRole, myReservations, chatMessages } = useAppState();
+  const { ownerStore, selectedRole, myReservations, chatMessages, isPreview } = useAppState();
   const isOwner = selectedRole === 'owner';
   const T = useTypography(selectedRole === 'owner' ? 'owner' : 'booker');
 
   const threads = useMemo(() => {
     const chattable = myReservations.filter((r) => r.status === 'confirmed' || r.status === 'pending');
-    return isOwner ? chattable.filter((r) => r.storeId === ownerStore.id) : chattable;
+    return isOwner ? chattable.filter((r) => r.storeId === ownerStore?.id) : chattable;
   }, [myReservations, isOwner]);
 
   const lastMessageOf = (reservationId: string): ChatMessage | undefined => {
@@ -29,15 +28,15 @@ export default function ChatListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[T.titleMD, { color: AppColors.ink }]}>채팅</Text>
+        <Text style={[T.titleMD, { color: AppColors.ink }]}>채팅 · 준비 중</Text>
       </View>
 
       {threads.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="chatbubbles-outline" size={36} color={AppColors.inkSecondary} />
-          <Text style={[T.titleMD, { color: AppColors.ink }]}>대화 중인 예약이 없어요</Text>
+          <Text style={[T.titleMD, { color: AppColors.ink }]}>{isPreview ? '테스트 미리보기에서는 채팅할 수 없어요' : '대화 중인 예약이 없어요'}</Text>
           <Text style={[T.bodyMD, { color: AppColors.inkSecondary, textAlign: 'center' }]}>
-            예약이 확정되면 여기서 채팅할 수 있어요
+            {isPreview ? '학생증 인증과 채팅 연결 기능은 준비 중입니다.' : '채팅 기능은 준비 중입니다.'}
           </Text>
         </View>
       ) : (

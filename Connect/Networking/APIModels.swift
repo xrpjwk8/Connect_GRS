@@ -128,8 +128,26 @@ struct TimeBlockUpdateRequestBody: Encodable {
 // MARK: - 백엔드 API 엔드포인트 래퍼
 
 enum ConnectAPI {
+    #if DEBUG
+    private static var previewStores: [StoreDTO] {
+        (MockData.homeFeaturedStores + MockData.searchResults).map {
+            StoreDTO(id: $0.id, name: $0.name, category: $0.category, rating: $0.rating,
+                     reviewCount: $0.reviewCount, maxCapacity: $0.maxCapacity,
+                     pricePerPerson: $0.pricePerPerson, acceptanceRate: $0.acceptanceRate,
+                     region: $0.location, description: "개발 화면 확인용 예시 매장입니다.",
+                     imageName: $0.imageName, keywords: $0.keywords, favorite: false)
+        }
+    }
+    #endif
+
     static func fetchFilters() async throws -> FilterMetadataDTO {
-        try await APIClient.shared.get("/api/meta/filters")
+        #if DEBUG
+        if APIConfig.isOfflinePreview {
+            return FilterMetadataDTO(regions: MockData.regions, categories: MockData.categories,
+                                     universities: MockData.universities, timeOptions: MockData.timeOptions)
+        }
+        #endif
+        return try await APIClient.shared.get("/api/meta/filters")
     }
 
     static func signUpBooker(_ body: BookerSignUpRequestBody) async throws -> BookerProfileDTO {
@@ -141,14 +159,28 @@ enum ConnectAPI {
     }
 
     static func featuredStores(bookerId: UUID?, region: String?) async throws -> [StoreDTO] {
-        try await APIClient.shared.get("/api/stores/featured", query: [
+        #if DEBUG
+        if APIConfig.isOfflinePreview {
+            return previewStores.filter { region == nil || region == "전체" || $0.region == region }
+        }
+        #endif
+        return try await APIClient.shared.get("/api/stores/featured", query: [
             "bookerId": bookerId?.uuidString,
             "region": region
         ])
     }
 
     static func searchStores(bookerId: UUID?, region: String?, category: String?, people: Int?, date: String?, time: String?) async throws -> [StoreDTO] {
-        try await APIClient.shared.get("/api/stores", query: [
+        #if DEBUG
+        if APIConfig.isOfflinePreview {
+            return previewStores.filter {
+                (region == nil || region == "전체" || $0.region == region) &&
+                (category == nil || category == "전체" || $0.category.contains(category!)) &&
+                (people == nil || $0.maxCapacity >= people!)
+            }
+        }
+        #endif
+        return try await APIClient.shared.get("/api/stores", query: [
             "bookerId": bookerId?.uuidString,
             "region": region,
             "category": category,
@@ -159,13 +191,24 @@ enum ConnectAPI {
     }
 
     static func store(storeId: UUID, bookerId: UUID?) async throws -> StoreDTO {
-        try await APIClient.shared.get("/api/stores/\(storeId.uuidString)", query: [
+        #if DEBUG
+        if APIConfig.isOfflinePreview {
+            guard let store = previewStores.first(where: { $0.id == storeId }) else {
+                throw APIError.server(status: 404, message: "미리보기 매장을 찾을 수 없습니다.")
+            }
+            return store
+        }
+        #endif
+        return try await APIClient.shared.get("/api/stores/\(storeId.uuidString)", query: [
             "bookerId": bookerId?.uuidString
         ])
     }
 
     static func favorites(bookerId: UUID) async throws -> [StoreDTO] {
-        try await APIClient.shared.get("/api/bookers/\(bookerId.uuidString)/favorites")
+        #if DEBUG
+        if APIConfig.isOfflinePreview { return [] }
+        #endif
+        return try await APIClient.shared.get("/api/bookers/\(bookerId.uuidString)/favorites")
     }
 
     static func addFavorite(bookerId: UUID, storeId: UUID) async throws {
@@ -181,7 +224,10 @@ enum ConnectAPI {
     }
 
     static func reservations(bookerId: UUID, statusGroup: String?) async throws -> [ReservationDTO] {
-        try await APIClient.shared.get("/api/bookers/\(bookerId.uuidString)/reservations", query: [
+        #if DEBUG
+        if APIConfig.isOfflinePreview { return [] }
+        #endif
+        return try await APIClient.shared.get("/api/bookers/\(bookerId.uuidString)/reservations", query: [
             "statusGroup": statusGroup
         ])
     }
@@ -195,7 +241,13 @@ enum ConnectAPI {
     }
 
     static func ownerDashboard(ownerId: UUID) async throws -> OwnerDashboardDTO {
-        try await APIClient.shared.get("/api/owners/\(ownerId.uuidString)/dashboard")
+        #if DEBUG
+        if APIConfig.isOfflinePreview {
+            return OwnerDashboardDTO(storeName: "개발용 매장", weeklyRevenueManWon: 0,
+                                     weeklyReservationCount: 0, pendingRequestCount: 0, pendingRequests: [])
+        }
+        #endif
+        return try await APIClient.shared.get("/api/owners/\(ownerId.uuidString)/dashboard")
     }
 
     static func approveReservation(ownerId: UUID, reservationId: UUID) async throws -> ReservationDTO {
@@ -207,7 +259,15 @@ enum ConnectAPI {
     }
 
     static func availability(ownerId: UUID, storeId: UUID, date: String) async throws -> AvailabilityDTO {
-        try await APIClient.shared.get("/api/owners/\(ownerId.uuidString)/availability", query: [
+        #if DEBUG
+        if APIConfig.isOfflinePreview {
+            let slots = stride(from: 17 * 60, through: 24 * 60, by: 30).map { minute in
+                AvailabilitySlotDTO(time: String(format: "%02d:%02d:00", minute / 60, minute % 60), state: "available")
+            }
+            return AvailabilityDTO(date: date, slots: slots)
+        }
+        #endif
+        return try await APIClient.shared.get("/api/owners/\(ownerId.uuidString)/availability", query: [
             "storeId": storeId.uuidString,
             "date": date
         ])

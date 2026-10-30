@@ -15,12 +15,15 @@ export function PrimaryFilledButton({ title, style, appRole = 'booker', ...props
   const T = useTypography(appRole);
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!props.disabled }}
       {...props}
       style={(state) => [
         styles.base,
         styles.primaryFilled,
         state.pressed && styles.pressed,
         typeof style === 'function' ? style(state) : style,
+        props.disabled && { opacity: 0.45 },
       ]}
     >
       <Text style={[T.titleMD, { color: AppColors.white }]}>{title}</Text>
@@ -32,12 +35,15 @@ export function LimeButton({ title, style, appRole = 'booker', ...props }: AppBu
   const T = useTypography(appRole);
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!props.disabled }}
       {...props}
       style={(state) => [
         styles.base,
         styles.lime,
         state.pressed && styles.pressed,
         typeof style === 'function' ? style(state) : style,
+        props.disabled && { opacity: 0.45 },
       ]}
     >
       <Text style={[T.titleMD, { color: AppColors.ink }]}>{title}</Text>
@@ -49,12 +55,15 @@ export function GhostButton({ title, style, textStyle, appRole = 'booker', ...pr
   const T = useTypography(appRole);
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!props.disabled }}
       {...props}
       style={(state) => [
         styles.base,
         styles.ghost,
         state.pressed && styles.pressed,
         typeof style === 'function' ? style(state) : style,
+        props.disabled && { opacity: 0.45 },
       ]}
     >
       <Text style={[T.titleMD, { color: AppColors.ink }, textStyle]}>{title}</Text>

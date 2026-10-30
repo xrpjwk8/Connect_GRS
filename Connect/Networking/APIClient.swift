@@ -1,6 +1,16 @@
 import Foundation
 
 enum APIConfig {
+    /// Debug builds start offline so UI development does not require the legacy server.
+    /// Set CONNECT_USE_LEGACY_SERVER=1 in the Xcode Run scheme to test the old API.
+    static var isOfflinePreview: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.environment["CONNECT_USE_LEGACY_SERVER"] != "1"
+        #else
+        false
+        #endif
+    }
+
     /// 시뮬레이터에서는 localhost가 macOS 호스트를 가리켜서 그대로 사용 가능.
     /// 실기기 테스트 시엔 macOS의 LAN IP로 바꿔야 함.
     static var baseURL = URL(string: "http://localhost:8080")!
@@ -11,6 +21,7 @@ enum APIError: LocalizedError {
     case server(status: Int, message: String)
     case decoding(Error)
     case network(Error)
+    case previewOnly
 
     var errorDescription: String? {
         switch self {
@@ -22,6 +33,8 @@ enum APIError: LocalizedError {
             return "서버 응답을 읽을 수 없습니다."
         case .network(let error):
             return "네트워크 오류: \(error.localizedDescription)"
+        case .previewOnly:
+            return "화면 미리보기 중입니다. 실제 서버에는 저장되지 않습니다."
         }
     }
 }
@@ -104,6 +117,9 @@ actor APIClient {
     }
 
     private func sendRaw(_ request: URLRequest) async throws -> Data {
+        // Also block unhandled endpoints and writes: preview identities must never
+        // reach a real server, even when a server happens to be running locally.
+        guard !APIConfig.isOfflinePreview else { throw APIError.previewOnly }
         let data: Data
         let response: URLResponse
         do {

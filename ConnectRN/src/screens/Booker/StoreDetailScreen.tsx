@@ -20,18 +20,14 @@ import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
 import { InfoBanner, TagLabel } from '../../components/CommonComponents';
-import { isSameDay } from '../../utils/date';
+import { minuteLabel, serviceDate, slotSelection } from '../../utils/reservation';
+import { rpc } from '../../services/backend';
+import { supabase } from '../../lib/supabase';
+import { useServerAction, useServerQuery } from '../../hooks/useServer';
+import { showAlert } from '../../utils/alert';
 import type { Store } from '../../models/types';
 
-const TIME_ROWS: string[][] = [
-  ['17:00', '17:30', '18:00', '18:30'],
-  ['19:00', '19:30', '20:00', '20:30'],
-  ['21:00', '21:30', '22:00', '22:30'],
-  ['23:00', '23:30', '24:00', ''],
-];
-const PAST_TIMES = new Set(['17:00', '17:30']);
 const MAX_CONSECUTIVE_SLOTS = 6;
-const ALL_TIMES = TIME_ROWS.flat().filter((t) => t !== '');
 const WEEKDAY_LETTERS = ['일', '월', '화', '수', '목', '금', '토'];
 
 function addThirtyMinutes(timeString: string): string {
@@ -49,18 +45,11 @@ export default function StoreDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const store: Store = route.params.store;
-  const {
-    selectedSearchDate,
-    myReservations,
-    setMyReservations,
-    setSelectedBookerTab,
-    realName,
-    schoolName,
-    departmentName,
-    capacityOverbookingEnabled,
-  } = useAppState();
-
-  const [isFavorite, setIsFavorite] = useState(store.isFavorite);
+  const { selectedSearchDate, setSelectedBookerTab, favorites, session } = useAppState();
+  const action = useServerAction();
+  const isFavorite = favorites.some(f => f.id === store.id);
+  const ALL_TIMES = Array.from({ length: ((store.closingMinute ?? 1470) - (store.openingMinute ?? 1020)) / 30 }, (_, i) => minuteLabel((store.openingMinute ?? 1020) + i * 30));
+  const TIME_ROWS = Array.from({ length: Math.ceil(ALL_TIMES.length / 4) }, (_, i) => ALL_TIMES.slice(i * 4, i * 4 + 4));
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const peopleInputRef = useRef<TextInput>(null);
   const [peopleText, setPeopleText] = useState('18');
@@ -68,12 +57,17 @@ export default function StoreDetailScreen() {
   const [eventPurpose, setEventPurpose] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
 
-  const anchor = selectedSearchDate ?? new Date();
+  const anchor = useMemo(() => selectedSearchDate ?? new Date(), [selectedSearchDate]);
+  const availability = useServerQuery(`${store.id}:${serviceDate(anchor)}`, () => rpc('get_availability', { p_store_id: store.id, p_service_date: serviceDate(anchor) }));
+  const unavailable = (time: string) => {
+    const slot = availability.data?.find(a => minuteLabel(a.start_minute) === time);
+    return !slot || slot.blocked || slot.remaining_seats < (Number(peopleText) || 1);
+  };
   const selectedDateLabel = `${anchor.getMonth() + 1}월 ${anchor.getDate()}일 (${WEEKDAY_LETTERS[anchor.getDay()]})`;
 
   const toggleTime = (t: string) => {
     const idx = ALL_TIMES.indexOf(t);
-    if (idx === -1) return;
+    if (idx === -1 || unavailable(t)) return;
 
     if (selectedTimes.includes(t)) {
       setSelectedTimes(selectedTimes.filter((s) => ALL_TIMES.indexOf(s) < idx));
@@ -103,86 +97,22 @@ export default function StoreDetailScreen() {
     return `${first} ~ ${addThirtyMinutes(last)} (${sorted.length}칸)`;
   }, [selectedTimes]);
 
-  const handleSubmit = () => {
-    if (selectedTimes.length === 0) {
-      Alert.alert('입력을 확인해주세요', '예약 시간을 선택해주세요.');
-      return;
-    }
-    const peopleNum = Number(peopleText) || 0;
-    if (peopleNum < 1) {
-      Alert.alert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
-      return;
-    }
-
-    const sortedTimes = [...selectedTimes].sort((a, b) => ALL_TIMES.indexOf(a) - ALL_TIMES.indexOf(b));
-    const timeLabel =
-      sortedTimes.length === 1
-        ? sortedTimes[0]
-        : `${sortedTimes[0]} ~ ${addThirtyMinutes(sortedTimes[sortedTimes.length - 1])}`;
-    const dateLabel = `${selectedDateLabel} ${timeLabel}`;
-
-    const dateValue = new Date(anchor);
-
-    const bookedPeopleAt = (time: string) =>
-      myReservations
-        .filter(
-          (r) =>
-            r.storeId === store.id &&
-            r.status === 'confirmed' &&
-            r.dateValue &&
-            isSameDay(r.dateValue, dateValue) &&
-            r.timeLabels.includes(time)
-        )
-        .reduce((sum, r) => sum + r.people, 0);
-
-    const overCapacity = sortedTimes.some((t) => {
-      const booked = bookedPeopleAt(t);
-      if (!capacityOverbookingEnabled) return booked > 0;
-      return booked + peopleNum > store.maxCapacity;
-    });
-    if (overCapacity) {
-      Alert.alert(
-        '예약 불가',
-        capacityOverbookingEnabled
-          ? '선택하신 시간대는 매장 정원이 가득 찼어요. 인원을 줄이거나 다른 시간을 선택해주세요.'
-          : '선택하신 시간대는 이미 다른 예약으로 차단되어 있어요. 다른 시간을 선택해주세요.'
-      );
-      return;
-    }
-
-    setMyReservations([
-      {
-        id: `res-${Date.now()}`,
-        storeId: store.id,
-        storeName: store.name,
-        imageSymbol: store.imageName,
-        status: 'pending',
-        dateLabel,
-        people: peopleNum,
-        budget: Number(budget) || undefined,
-        bookerName: realName.trim() || '예약자',
-        bookerAffiliation: schoolName.trim()
-          ? `${schoolName.trim()}${departmentName.trim() ? ` · ${departmentName.trim()}` : ''}`
-          : '학교 정보 미입력',
-        dateValue,
-        timeLabels: sortedTimes,
-        eventPurpose,
-        requestMessage,
-      },
-      ...myReservations,
-    ]);
-
-    Alert.alert('예약 신청 완료', '점주님께 예약 요청을 보냈어요.\n‘내 예약’ 탭에서 진행 상황을 확인할 수 있어요.', [
-      {
-        text: '내 예약 보기',
-        onPress: () => {
-          setSelectedBookerTab(2);
-          navigation.goBack();
-        },
-      },
-      { text: '닫기', style: 'cancel', onPress: () => navigation.goBack() },
-    ]);
-  };
+  const handleSubmit = () => action.run(async () => {
+    const payload = { p_store_id: store.id, p_service_date: serviceDate(anchor), ...slotSelection(selectedTimes),
+      p_people: Number(peopleText), p_budget_per_person: budget ? Number(budget) : undefined,
+      p_event_purpose: eventPurpose, p_request_message: requestMessage };
+    if (!Number.isInteger(payload.p_people) || payload.p_people < 1) throw new Error('인원을 확인해주세요.');
+    await rpc('request_reservation', { ...payload, p_request_id: action.requestId(payload) });
+  }, () => showAlert('예약 신청 완료', '점주님께 예약 요청을 보냈어요.', [
+    { text: '내 예약 보기', onPress: () => { setSelectedBookerTab(2); navigation.goBack(); } },
+  ]));
+  const toggleFavorite = () => action.run(async () => {
+    if (!session) throw new Error('로그인이 필요합니다.');
+    const result = isFavorite
+      ? await supabase.from('favorites').delete().eq('user_id', session.user.id).eq('store_id', store.id)
+      : await supabase.from('favorites').insert({ user_id: session.user.id, store_id: store.id });
+    if (result.error) throw result.error;
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -194,7 +124,7 @@ export default function StoreDetailScreen() {
             <Ionicons name="chevron-back" size={20} color={AppColors.white} />
           </Pressable>
           <View style={styles.headerActions}>
-            <Pressable style={styles.iconBadge} onPress={() => setIsFavorite(!isFavorite)}>
+            <Pressable style={styles.iconBadge} onPress={toggleFavorite} disabled={action.busy}>
               <Ionicons
                 name={isFavorite ? 'heart' : 'heart-outline'}
                 size={18}
@@ -213,15 +143,15 @@ export default function StoreDetailScreen() {
           <Text style={styles.storeName}>{store.name}</Text>
 
           <View style={styles.kpiRow}>
-            <Kpi icon="star" label="별점" value={store.rating.toFixed(1)} sub={`(${store.reviewCount})`} />
+            <Kpi icon="star" label="별점" value={store.metricsAvailable === false ? '집계 전' : store.rating.toFixed(1)} sub={`(${store.reviewCount})`} />
             <Kpi icon="people-outline" label="단체수용인원" value={`최대 ${store.maxCapacity}명`} />
           </View>
           <View style={styles.kpiRow}>
-            <Kpi icon="cash-outline" label="1인당 평균가" value={`₩${store.pricePerPerson.toLocaleString()}`} />
+            <Kpi icon="cash-outline" label="1인당 평균가" value={store.metricsAvailable === false ? '매장 문의' : `₩${store.pricePerPerson.toLocaleString()}`} />
             <Kpi
               icon="checkmark-circle"
               label="예약 수락률"
-              value={`${store.acceptanceRate}%`}
+              value={store.metricsAvailable === false ? '집계 전' : `${store.acceptanceRate}%`}
               sub="우수"
               bg="rgba(214,255,61,0.25)"
             />
@@ -251,13 +181,15 @@ export default function StoreDetailScreen() {
             {selectedTimes.length > 0 && <Text style={styles.timeRangeLabel}>{selectedTimeRangeLabel}</Text>}
           </View>
           <View style={{ gap: 8 }}>
+            {availability.error ? <Pressable onPress={availability.reload}><Text>{availability.error} · 다시 시도</Text></Pressable> : null}
+            {availability.loading ? <Text>예약 가능 시간을 확인하고 있어요.</Text> : null}
             {TIME_ROWS.map((row, rowIdx) => (
               <View key={rowIdx} style={styles.timeRow}>
                 {row.map((t, colIdx) =>
                   t === '' ? (
                     <View key={colIdx} style={{ flex: 1 }} />
                   ) : (
-                    <TimeCell key={t} time={t} selected={selectedTimes.includes(t)} onPress={() => toggleTime(t)} />
+                    <TimeCell key={t} time={t} selected={selectedTimes.includes(t)} disabled={action.busy || unavailable(t)} onPress={() => toggleTime(t)} />
                   )
                 )}
               </View>
@@ -344,7 +276,7 @@ export default function StoreDetailScreen() {
       </ScrollView>
 
       <BlurView intensity={40} tint="light" style={styles.bottomCTA}>
-        <Pressable style={styles.submitButton} onPress={handleSubmit}>
+        <Pressable style={styles.submitButton} onPress={handleSubmit} disabled={action.busy || availability.loading || !!availability.error || !selectedTimes.length}>
           <Text style={styles.submitButtonText}>예약 신청하기</Text>
           <Ionicons name="arrow-forward" size={18} color={AppColors.ink} />
         </Pressable>
@@ -381,8 +313,8 @@ function Kpi({
   );
 }
 
-function TimeCell({ time, selected, onPress }: { time: string; selected: boolean; onPress: () => void }) {
-  const isPast = PAST_TIMES.has(time);
+function TimeCell({ time, selected, disabled, onPress }: { time: string; selected: boolean; disabled: boolean; onPress: () => void }) {
+  const isPast = disabled;
   return (
     <Pressable
       disabled={isPast}
