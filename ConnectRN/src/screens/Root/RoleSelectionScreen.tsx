@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { AppColors } from '../../theme/colors';
-import { AppRadius } from '../../theme/radius';
+import { LimeButton, GhostButton } from '../../components/Buttons';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
@@ -15,13 +15,8 @@ export default function RoleSelectionScreen() {
         <Text style={styles.title}>Connect</Text>
         <Text style={styles.subtitle}>어떤 역할로 시작할까요?</Text>
 
-        <Pressable style={styles.primaryButton} onPress={goToBookerSignUp}>
-          <Text style={styles.primaryButtonText}>예약자로 시작하기</Text>
-        </Pressable>
-
-        <Pressable style={styles.ghostButton} onPress={goToOwnerSignUp}>
-          <Text style={styles.ghostButtonText}>점주로 시작하기</Text>
-        </Pressable>
+        <LimeButton title="예약자로 시작하기" onPress={goToBookerSignUp} />
+        <GhostButton title="점주로 시작하기" onPress={goToOwnerSignUp} />
 
         <View style={styles.loginRow}>
           <Text style={styles.loginRowText}>이미 계정이 있으신가요?</Text>
@@ -43,24 +38,6 @@ const styles = StyleSheet.create({
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: AppSpacing.s24, gap: AppSpacing.s12 },
   title: { ...Typography.displayHero, color: AppColors.ink, marginBottom: AppSpacing.s4 },
   subtitle: { ...Typography.bodyLG, color: AppColors.inkSecondary, marginBottom: AppSpacing.s24 },
-  primaryButton: {
-    minHeight: 52,
-    borderRadius: AppRadius.pill,
-    backgroundColor: AppColors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: { ...Typography.titleMD, color: AppColors.ink },
-  ghostButton: {
-    minHeight: 48,
-    borderRadius: AppRadius.lg,
-    backgroundColor: AppColors.white,
-    borderWidth: 1,
-    borderColor: AppColors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ghostButtonText: { ...Typography.titleMD, color: AppColors.ink },
   loginRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

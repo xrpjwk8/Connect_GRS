@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, PressableProps, StyleSheet, Text, TextStyle } from 'react-native';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
+import { AppSpacing } from '../theme/spacing';
 import { type AppRole } from '../theme/typography';
 import { useTypography } from '../state/AppState';
 
@@ -26,7 +27,7 @@ export function PrimaryFilledButton({ title, style, appRole = 'booker', ...props
         props.disabled && { opacity: 0.45 },
       ]}
     >
-      <Text style={[T.titleMD, { color: AppColors.white }]}>{title}</Text>
+      <Text style={[T.titleMD, { color: AppColors.white, textAlign: 'center' }]}>{title}</Text>
     </Pressable>
   );
 }
@@ -46,7 +47,7 @@ export function LimeButton({ title, style, appRole = 'booker', ...props }: AppBu
         props.disabled && { opacity: 0.45 },
       ]}
     >
-      <Text style={[T.titleMD, { color: AppColors.ink }]}>{title}</Text>
+      <Text style={[T.titleMD, { color: AppColors.ink, textAlign: 'center' }]}>{title}</Text>
     </Pressable>
   );
 }
@@ -66,7 +67,7 @@ export function GhostButton({ title, style, textStyle, appRole = 'booker', ...pr
         props.disabled && { opacity: 0.45 },
       ]}
     >
-      <Text style={[T.titleMD, { color: AppColors.ink }, textStyle]}>{title}</Text>
+      <Text style={[T.titleMD, { color: AppColors.ink, textAlign: 'center' }, textStyle]}>{title}</Text>
     </Pressable>
   );
 }
@@ -74,21 +75,22 @@ export function GhostButton({ title, style, textStyle, appRole = 'booker', ...pr
 const styles = StyleSheet.create({
   base: {
     minHeight: 52,
+    borderRadius: AppRadius.lg,
+    paddingVertical: AppSpacing.s12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: AppSpacing.s16,
   },
   pressed: { opacity: 0.85 },
   primaryFilled: {
     backgroundColor: AppColors.ink,
-    borderRadius: AppRadius.pill,
+
   },
   lime: {
     backgroundColor: AppColors.primary,
-    borderRadius: AppRadius.pill,
+
   },
   ghost: {
-    minHeight: 48,
     backgroundColor: AppColors.white,
     borderRadius: AppRadius.lg,
     borderWidth: 1,

@@ -24,6 +24,9 @@ function renderSignup(session) {
     '../lib/supabase': { supabase: {} },
     '../services/backend': {},
     './CommonComponents': { AppTextField: () => React.createElement('input'), FormLabel: ({ title }) => title },
+    './ScreenHeader': { __esModule: true, default: ({ title }) => title },
+    '../theme/spacing': { AppSpacing: {} },
+    '../theme/radius': { AppRadius: {} },
     './Buttons': { LimeButton: button, GhostButton: button },
     './AgreementSection': { __esModule: true, default: () => '필수 약관' },
     '../theme/colors': { AppColors: {} },
@@ -40,12 +43,12 @@ test('verified user remount resumes profile completion, never development previe
   const html = renderSignup({ user: { email: 'booker@example.com' } });
   assert.match(html, /이메일 인증 완료/);
   assert.match(html, /가입 완료하고 학생증 제출하기/);
-  assert.doesNotMatch(html, /테스트 미리보기|테스트 가입으로 돌아가기|인증번호 요청/);
+  assert.doesNotMatch(html, /테스트 미리보기|테스트 미리보기로 돌아가기|인증번호 요청/);
 });
 
 test('unauthenticated development signup still offers blank preview and real authentication separately', () => {
   const html = renderSignup(null);
-  assert.match(html, /가입 완료하기 \(테스트 미리보기\)/);
+  assert.match(html, /입력 없이 테스트 미리보기/);
   assert.match(html, /이메일 인증하기 \(실제 가입\)/);
   assert.doesNotMatch(html, /이메일 인증 완료|가입 완료하고 학생증 제출하기/);
 });

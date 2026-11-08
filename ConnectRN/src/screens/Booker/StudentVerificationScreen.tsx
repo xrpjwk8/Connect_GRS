@@ -6,6 +6,9 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useAppState, useTypography } from '../../state/AppState';
 import { GhostButton, LimeButton } from '../../components/Buttons';
 import StudentDocumentPreview from '../../components/StudentDocumentPreview';
+import ScreenHeader from '../../components/ScreenHeader';
+import { AppSpacing } from '../../theme/spacing';
+import { AppRadius } from '../../theme/radius';
 import DataStatus from '../../components/DataStatus';
 import { useRefreshOnFocus, useServerAction } from '../../hooks/useServer';
 import { MAX_STUDENT_CARD_BYTES, verificationLabel } from '../../utils/studentVerification';
@@ -47,10 +50,13 @@ export default function StudentVerificationScreen() {
   }, () => showAlert('학생증 제출 완료', '관리자 심사 후 결과를 이 화면에서 확인할 수 있습니다.'));
 
   return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}>
-    <ScrollView contentContainerStyle={{ padding: 22, gap: 18 }}>
-      <GhostButton title="뒤로" onPress={() => navigation.getState().index > 0 ? navigation.goBack() : navigation.replace('MyPage')} disabled={action.busy} />
-      <Text style={T.headlineLG}>학생증 인증</Text>
-      <Text style={[T.titleMD, { color: AppColors.primaryDeep }]}>{verificationLabel[status]}</Text>
+    <ScreenHeader title="학생증 인증" onBack={() => navigation.getState().index > 0 ? navigation.goBack() : navigation.replace('MyPage')} disabled={action.busy} />
+    <ScrollView contentContainerStyle={{ padding: AppSpacing.s24, paddingTop: AppSpacing.s8, gap: AppSpacing.s18 }}>
+      <View style={{ padding: AppSpacing.s18, gap: AppSpacing.s8, borderRadius: AppRadius.lg, backgroundColor: status === 'rejected' ? AppColors.dangerSoft : AppColors.white }}>
+      <Text style={[T.labelMD, { color: AppColors.inkSecondary }]}>인증 진행 상태</Text>
+      <Text style={[T.headlineSM, { color: AppColors.primaryDeep }]}>{app.isPreview ? '테스트 미리보기' : verificationLabel[status]}</Text>
+      <Text style={T.bodyMD}>{status === 'draft' ? '학생증 제출 → 관리자 심사 → 예약 이용' : status === 'pending' ? '제출 완료 · 심사 결과를 기다려주세요' : status === 'approved' ? '인증 완료 · 예약을 이용할 수 있어요' : '반려 사유를 확인하고 새 파일을 제출해주세요'}</Text>
+      </View>
       <Text style={T.bodyLG}>{app.realName || '이름 미입력'} · {app.schoolName || '학교 미입력'}</Text>
       <Text style={T.bodyMD}>학생증의 이름과 학교가 가입 정보와 일치해야 합니다. 학번·생년월일·바코드 등 심사에 불필요한 정보는 가려주세요. 학생 신분 확인이며 회장단 권한을 증명하지는 않습니다.</Text>
       <DataStatus />
@@ -61,15 +67,15 @@ export default function StudentVerificationScreen() {
       {verification && !app.isPreview && <StudentDocumentPreview key={verification.request_id} path={verification.document_path} />}
       {canSubmit && <>
         <Text style={T.bodyMD}>제출 파일은 본인과 관리자만 조회합니다. JPG·PNG·PDF, 최대 10MB.</Text>
-        <GhostButton title={picking ? '파일 선택 중…' : '학생증 파일 선택'} onPress={pick} disabled={action.busy || picking} />
-        {file && <View style={{ padding: 14, gap: 10, borderWidth: 1, borderColor: AppColors.borderStrong, borderRadius: 16, backgroundColor: AppColors.white }}>
+        <GhostButton title={picking ? '파일 선택 중…' : file ? '다른 파일로 교체' : '학생증 파일 선택'} onPress={pick} disabled={action.busy || picking} />
+        {file && <View style={{ padding: AppSpacing.s16, gap: AppSpacing.s12, borderWidth: 1, borderColor: AppColors.borderStrong, borderRadius: AppRadius.lg, backgroundColor: AppColors.white }}>
           <Text style={T.titleMD}>제출할 파일 미리보기</Text>
           <Text style={T.bodyMD}>{file.name}{file.size != null ? ` · ${Math.max(1, Math.round(file.size / 1024))}KB` : ''}</Text>
           {file.mimeType === 'application/pdf' || /\.pdf$/i.test(file.name)
             ? <Text style={T.bodyMD}>PDF는 이미지 미리보기를 지원하지 않습니다. 선택한 파일명을 확인해주세요.</Text>
             : <>
               <Image key={file.uri} accessibilityLabel="제출 전 선택한 학생증 이미지" source={{ uri: file.uri }}
-                style={{ width: '100%', height: 260, borderRadius: 8 }} resizeMode="contain" onError={() => setPreviewError(true)} />
+                style={{ width: '100%', height: 300, borderRadius: AppRadius.md, backgroundColor: AppColors.surfaceContainerLow }} resizeMode="contain" onError={() => setPreviewError(true)} />
               {previewError ? <Text accessibilityRole="alert" style={{ color: AppColors.danger }}>이미지 미리보기를 불러오지 못했습니다. 파일을 다시 선택해주세요.</Text>
                 : <Text style={T.bodyMD}>이름·학교가 잘 보이고 불필요한 개인정보가 가려져 있는지 확인해주세요.</Text>}
             </>}
@@ -84,6 +90,7 @@ export default function StudentVerificationScreen() {
         {verification?.status === 'draft' && <GhostButton title="이미 업로드한 파일로 제출 재시도" disabled={action.busy || !consent}
           onPress={() => action.run(() => rpc('submit_student_verification', { p_request_id: verification.request_id }))} />}
       </>}
+      {status !== 'approved' && <GhostButton title={status === 'pending' ? '심사 기다리며 앱 둘러보기' : '나중에 제출하고 앱 둘러보기'} disabled={action.busy} onPress={() => navigation.getState().index > 0 ? navigation.goBack() : navigation.replace('MyPage')} />}
     </ScrollView>
   </SafeAreaView>;
 }
