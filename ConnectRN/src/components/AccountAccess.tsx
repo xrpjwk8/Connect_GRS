@@ -1,5 +1,6 @@
+import useNativeBack from '../navigation/useNativeBack';
 import React, { useEffect, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppState, useTypography } from '../state/AppState';
 import type { UserRole } from '../models/types';
@@ -14,7 +15,7 @@ import AgreementSection from './AgreementSection';
 import { AppColors } from '../theme/colors';
 
 export default function AccountAccess({ role, signup = false }: { role: UserRole; signup?: boolean }) {
-  const { session, ready, cancelSignUp, refresh, logout, enterPreview, isAdmin, setAdminPanelOpen, setStudentVerificationOnEntry } = useAppState();
+  const { session, ready, refresh, logout, enterPreview, isAdmin, setAdminPanelOpen, setStudentVerificationOnEntry } = useAppState();
   const [useEmailAuth, setUseEmailAuth] = useState(!__DEV__ || !signup);
   const previewSignup = __DEV__ && signup && !session && !useEmailAuth;
   const T = useTypography(role);
@@ -29,6 +30,7 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
   const [agreed, setAgreed] = useState(false);
   const [actionBusy, setBusy] = useState(false);
   const busy = actionBusy || !ready;
+  const goBack = useNativeBack(busy);
   const busyRef = useRef(false);
   const [error, setError] = useState('');
   const normalized = email.trim().toLowerCase();
@@ -69,12 +71,12 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
       <AppTextField accessibilityLabel={`${label} 필수`} placeholder={placeholder} value={value} onChangeText={change} editable={!busy} appRole={role} /></View>
   );
   const emailField = <View style={{ gap: 8 }}><FormLabel title="이메일" required appRole={role} />
-    <AppTextField appRole={role} accessibilityLabel="이메일 필수" value={email} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" editable={!busy}
+    <AppTextField appRole={role} accessibilityLabel="이메일 필수" value={email} autoCapitalize="none" autoCorrect={false} keyboardType={Platform.OS === 'ios' ? 'ascii-capable' : 'email-address'} textContentType="emailAddress" spellCheck={false} editable={!busy}
       placeholder="name@example.com"
       onChangeText={v => { setEmail(v); setSentTo(''); setCode(''); }} />
   </View>;
   return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}>
-    <ScreenHeader title={`${role === 'booker' ? '예약자' : '점주'} ${session ? '가입 정보 확인' : signup ? '회원가입' : '로그인'}`} onBack={cancelSignUp} disabled={busy} appRole={role} />
+    <ScreenHeader title={`${role === 'booker' ? '예약자' : '점주'} ${session ? '가입 정보 확인' : signup ? '회원가입' : '로그인'}`} onBack={goBack} disabled={busy} appRole={role} />
       <ScrollView automaticallyAdjustKeyboardInsets style={{ flex: 1 }} contentContainerStyle={{ padding: AppSpacing.s24, paddingTop: AppSpacing.s8, gap: AppSpacing.s20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {!ready ? <Text style={T.bodyLG}>인증된 계정을 확인하고 있습니다…</Text> : session ? <Text style={T.bodyLG}>{session.user.email} 이메일 인증 완료. 기본 정보와 필수 약관을 확인하면 {role === 'booker' ? '학생증 제출로 이어집니다.' : '가입이 완료됩니다.'}</Text> : null}
         {isAdmin && <GhostButton title="관리자 학생증 심사" appRole={role} onPress={() => setAdminPanelOpen(true)} />}

@@ -1,7 +1,7 @@
+import useNativeBack from '../../navigation/useNativeBack';
 import React, { useState } from 'react';
 import { Image, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAppState, useTypography } from '../../state/AppState';
 import { GhostButton, LimeButton } from '../../components/Buttons';
@@ -19,7 +19,7 @@ import { showAlert } from '../../utils/alert';
 import { AppColors } from '../../theme/colors';
 
 export default function StudentVerificationScreen() {
-  const app = useAppState(); const T = useTypography('booker'); const navigation = useNavigation<any>();
+  const app = useAppState(); const T = useTypography('booker');
   useRefreshOnFocus();
   const action = useServerAction();
   const [file, setFile] = useState<UploadFile | null>(null);
@@ -50,8 +50,9 @@ export default function StudentVerificationScreen() {
     } finally { await app.refresh().catch(() => {}); }
   }, () => showAlert('학생증 제출 완료', '관리자 심사 후 결과를 이 화면에서 확인할 수 있습니다.'));
 
+  const goBack = useNativeBack(action.busy);
   return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}>
-    <ScreenHeader title="학생증 인증" onBack={() => navigation.getState().index > 0 ? navigation.goBack() : navigation.replace('MyPage')} disabled={action.busy} />
+    <ScreenHeader title="학생증 인증" onBack={goBack} disabled={action.busy} />
     <ScrollView contentContainerStyle={{ padding: AppSpacing.s24, paddingTop: AppSpacing.s8, gap: AppSpacing.s18 }}>
       <View style={{ padding: AppSpacing.s18, gap: AppSpacing.s8, borderRadius: AppRadius.lg, backgroundColor: status === 'rejected' ? AppColors.dangerSoft : AppColors.white }}>
       <Text style={[T.labelMD, { color: AppColors.inkSecondary }]}>인증 진행 상태</Text>
@@ -93,7 +94,7 @@ export default function StudentVerificationScreen() {
           onPress={() => action.run(() => rpc('submit_student_verification', { p_request_id: verification.request_id }))} />}
         </>}
       </>}
-      {status !== 'approved' && <GhostButton title={status === 'pending' ? '심사 기다리며 앱 둘러보기' : '나중에 제출하고 앱 둘러보기'} disabled={action.busy} onPress={() => navigation.getState().index > 0 ? navigation.goBack() : navigation.replace('MyPage')} />}
+      {status !== 'approved' && <GhostButton title={status === 'pending' ? '심사 기다리며 앱 둘러보기' : '나중에 제출하고 앱 둘러보기'} disabled={action.busy} onPress={goBack} />}
     </ScrollView>
   </SafeAreaView>;
 }

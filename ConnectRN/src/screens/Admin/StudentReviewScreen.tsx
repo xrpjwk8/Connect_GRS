@@ -1,3 +1,4 @@
+import useNativeBack from '../../navigation/useNativeBack';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,8 +36,9 @@ export default function StudentReviewScreen() {
       });
     return () => { active = false; };
   }, [app.isAdmin, app.isPreview, app.session?.user.id, page, status, version]);
+  const goBack = useNativeBack();
   return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}>
-    <ScreenHeader title="학생증 심사" appRole="owner" backLabel={app.profile ? '닫기' : '로그아웃'} onBack={() => { if (app.profile) app.setAdminPanelOpen(false); else void app.logout(); }} />
+    <ScreenHeader title="학생증 심사" appRole="owner" backLabel={app.profile ? '닫기' : '로그아웃'} onBack={goBack} />
     <ScrollView automaticallyAdjustKeyboardInsets style={{ flex: 1 }} contentContainerStyle={{ padding: AppSpacing.s24, paddingTop: AppSpacing.s8, gap: AppSpacing.s18 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
       <Text style={T.bodyMD}>이름·학교와 제출 파일을 대조해 심사하세요. 본인 신청은 승인할 수 없습니다.</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{['pending','approved','rejected'].map(value =>

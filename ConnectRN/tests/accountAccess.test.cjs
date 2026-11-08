@@ -19,6 +19,7 @@ function renderSignup(session, values = {}) {
   const box = ({ children }) => React.createElement('div', null, children);
   const button = ({ title, disabled }) => React.createElement('button', { disabled }, title);
   const dependencies = {
+    '../navigation/useNativeBack': { __esModule: true, default: () => () => {} },
     react: { ...React, useState(initial) { const key = stateNames[stateIndex++]; return React.useState(key in values ? values[key] : initial); } },
     'react-native': { KeyboardAvoidingView: box, ScrollView: box, Text: box, View: box, Platform: { OS: 'web' } },
     'react-native-safe-area-context': { SafeAreaView: box },

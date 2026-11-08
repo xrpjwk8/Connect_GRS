@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
@@ -67,13 +67,24 @@ function MyReservationsStackNavigator() {
 }
 
 const MyPageStack = createNativeStackNavigator();
+function MyPageEntry({ navigation }: any) {
+  const { studentVerificationOnEntry, setStudentVerificationOnEntry } = useAppState();
+  const opened = useRef(false);
+  useEffect(() => {
+    if (studentVerificationOnEntry && !opened.current) {
+      opened.current = true;
+      navigation.navigate('StudentVerification');
+      setStudentVerificationOnEntry(false);
+    }
+  }, [studentVerificationOnEntry, setStudentVerificationOnEntry, navigation]);
+  return <MyPageScreen />;
+}
 function MyPageStackNavigator() {
-  const { studentVerificationOnEntry } = useAppState();
   return (
-    <MyPageStack.Navigator initialRouteName={studentVerificationOnEntry ? 'StudentVerification' : 'MyPage'} screenOptions={{ headerShown: false }}>
-      <MyPageStack.Screen name="MyPage" component={MyPageScreen} />
+    <MyPageStack.Navigator initialRouteName="MyPage" screenOptions={{ headerShown: false }}>
+      <MyPageStack.Screen name="MyPage" component={MyPageEntry} />
       <MyPageStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
-      <MyPageStack.Screen name="StudentVerification" component={StudentVerificationScreen} />
+      <MyPageStack.Screen name="StudentVerification" component={StudentVerificationScreen} options={{ gestureEnabled: true, fullScreenGestureEnabled: false }} />
     </MyPageStack.Navigator>
   );
 }
