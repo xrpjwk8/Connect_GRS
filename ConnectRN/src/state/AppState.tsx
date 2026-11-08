@@ -1,3 +1,4 @@
+import { unregisterPush } from '../services/pushNotifications';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState as NativeAppState, Platform } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
@@ -43,6 +44,7 @@ function useStateValue() {
   const [lastSearchFilter, setLastSearchFilter] = useState<SearchFilter | null>(null);
   const [myReservations, setMyReservations] = useState<MyReservation[]>([]);
   const [blockedSlotsByDate, setBlockedSlotsByDate] = useState<Record<string, string[]>>({});
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [favorites, setFavorites] = useState<Store[]>([]);
   const [storePhotoWideUri, setStorePhotoWideUri] = useState<string | null>(null);
   const [storePhotoSquareUri, setStorePhotoSquareUri] = useState<string | null>(null);
@@ -54,7 +56,7 @@ function useStateValue() {
   const clearAccount = useCallback(() => {
     setStudentVerificationOnEntry(false);
     setStudentVerification(null); setIsAdmin(false); setAdminPanelOpen(false);
-    setProfile(null); setOwnerStoreRow(null); setMyReservations([]); setFavorites([]);
+    setChatMessages([]); setProfile(null); setOwnerStoreRow(null); setMyReservations([]); setFavorites([]);
     setBlockedSlotsByDate({}); setSchoolName(''); setDepartmentName(''); setPosition('');
     setRealName(''); setSchoolEmail(''); setPhoneNumber(''); setProfileImageUri(null);
     setStorePhotoWideUri(null); setStorePhotoSquareUri(null); setStoreNaverMapUrl(null); setStoreKakaoMapUrl(null);
@@ -72,15 +74,17 @@ function useStateValue() {
       if (adminError) throw adminError;
       const { data: p, error: pe } = await supabase.from('profiles').select('*').eq('id', current.user.id).maybeSingle();
       if (pe) throw pe;
-      const [stores, reservations, blocks, favoriteRows, verification] = await Promise.all([
+      const [stores, reservations, blocks, favoriteRows, verification, messages] = await Promise.all([
         supabase.from('stores').select('*').eq('owner_id', current.user.id).order('created_at').limit(1),
         supabase.from('reservations').select('*, stores(name)').order('starts_at', { ascending: false }),
         supabase.from('time_blocks').select('*'),
         supabase.from('favorites').select('stores(*)').eq('user_id', current.user.id),
         supabase.from('student_verifications').select('*').eq('user_id', current.user.id).maybeSingle(),
+        supabase.from('chat_messages').select('*').order('created_at', { ascending: false }).limit(200),
       ]);
-      for (const response of [stores, reservations, blocks, favoriteRows, verification]) if (response.error) throw response.error;
+      for (const response of [stores, reservations, blocks, favoriteRows, verification, messages]) if (response.error) throw response.error;
       if (generation.current !== run || sessionRef.current?.user.id !== current.user.id) return;
+      setChatMessages((messages.data ?? []).reverse().map(m => ({ id: m.id, reservationId: m.reservation_id, senderRole: m.sender_role as UserRole, text: m.body, timeLabel: new Date(m.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) })));
       setProfile(p); setOwnerStoreRow(stores.data?.[0] ?? null);
       setIsAdmin(admin === true); setStudentVerification(verification.data);
       setMyReservations((reservations.data ?? []).map(r => mapReservation(r, r.stores?.name ?? '매장')));
@@ -136,6 +140,15 @@ function useStateValue() {
     // Token refreshes keep the same account; don't erase edits or refetch every token event.
   }, [userId, session === undefined, refresh]);
 
+  useEffect(() => {
+    if (!userId || isPreview) return;
+    const channel = supabase.channel(`account-events:${userId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, () => { void refresh().catch(() => {}); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => { void refresh().catch(() => {}); })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [userId, isPreview, refresh]);
+
   const logout = useCallback(async () => {
     if (developmentPreview.active) {
       developmentPreview.exit(); setPreviewRole(null); clearAccount();
@@ -144,6 +157,7 @@ function useStateValue() {
       await refresh().catch(() => {});
       return;
     }
+    try { await unregisterPush(); } catch (error) { showAlert('로그아웃 실패', '기기 알림 연결을 해제하지 못했습니다. 인터넷 연결 후 다시 시도해주세요.'); return; }
     const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) { showAlert('로그아웃 실패', errorMessage(error)); return; }
     ++generation.current; sessionRef.current = null; setSession(null); clearAccount();
@@ -177,9 +191,7 @@ function useStateValue() {
     storePhotoWideUri, setStorePhotoWideUri, storePhotoSquareUri, setStorePhotoSquareUri,
     storeNaverMapUrl, setStoreNaverMapUrl, storeKakaoMapUrl, setStoreKakaoMapUrl,
     selectedBookerTab, setSelectedBookerTab, ownerFontScale, setOwnerFontScale,
-    chatMessages: [] as ChatMessage[],
-    sendChatMessage: (_id: string, _role: UserRole, _text: string) => showAlert('채팅 안내', isPreview ? previewRestriction
-      : profile?.role === 'booker' && studentVerification?.status !== 'approved' ? studentRestriction : '채팅 기능은 아직 연결되지 않았습니다.'),
+    chatMessages,
     goToBookerSignUp: () => navigateAuth('booker', 'bookerSignUp'),
     goToOwnerSignUp: () => navigateAuth('owner', 'ownerSignUp'),
     goToBookerLogin: () => navigateAuth('booker', 'bookerLogin'),

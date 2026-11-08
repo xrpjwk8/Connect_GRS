@@ -1,3 +1,6 @@
+import useNativeBack from '../../navigation/useNativeBack';
+import { useChat } from '../../hooks/useChat';
+import { GhostButton } from '../../components/Buttons';
 import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -18,29 +21,31 @@ import { AppSpacing } from '../../theme/spacing';
 import { useAppState, useTypography } from '../../state/AppState';
 import { InfoBanner } from '../../components/CommonComponents';
 
-const OWNER_QUICK_REPLIES = ['계좌번호: 국민은행 123456-78-901234', '입금 확인했습니다, 감사합니다!'];
+const OWNER_QUICK_REPLIES = ['예약 내용을 확인했습니다.', '입금 확인했습니다, 감사합니다!'];
 const BOOKER_QUICK_REPLIES = ['계좌번호 알려주세요', '방금 입금했습니다!'];
 
 export default function ChatScreen() {
+  const goBack = useNativeBack();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { reservationId } = route.params;
-  const { selectedRole, myReservations, chatMessages, sendChatMessage } = useAppState();
+  const { selectedRole, myReservations, session, canBook, isPreview } = useAppState();
   const role = selectedRole ?? 'booker';
   const isOwner = role === 'owner';
   const T = useTypography(role);
 
   const reservation = myReservations.find((r) => r.id === reservationId);
-  const messages = chatMessages.filter((m) => m.reservationId === reservationId);
+  const chat = useChat(reservationId);
+  const canSend = !!reservation && ['pending','confirmed'].includes(reservation.status) && !isPreview && (isOwner || canBook);
   const quickReplies = isOwner ? OWNER_QUICK_REPLIES : BOOKER_QUICK_REPLIES;
 
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<ScrollView>(null);
 
-  const handleSend = (text: string) => {
-    if (!text.trim()) return;
-    sendChatMessage(reservationId, role, text);
-    setDraft('');
+  const handleSend = async (text: string) => {
+    if (!text.trim() || !canSend) return;
+    setDraft(text);
+    if (await chat.send(text)) setDraft('');
   };
 
   const peerName = isOwner ? reservation?.bookerName || '예약자' : reservation?.storeName || '가게';
@@ -48,7 +53,7 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+        <Pressable onPress={goBack} hitSlop={8}>
           <Ionicons name="chevron-back" size={22} color={AppColors.ink} />
         </Pressable>
         <Text style={[T.titleMD, { color: AppColors.ink }]}>{peerName}</Text>
@@ -66,18 +71,21 @@ export default function ChatScreen() {
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
-          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+          onContentSizeChange={() => { if (!chat.loading) scrollRef.current?.scrollToEnd({ animated: true }); }}
         >
           <InfoBanner title="개인정보유출 주의" appRole={role} />
 
-          {messages.map((m) => (
-            <ChatBubble key={m.id} text={m.text} timeLabel={m.timeLabel} isMine={m.senderRole === role} role={role} />
+          {chat.error ? <Text accessibilityRole="alert" style={{ color: AppColors.danger }}>{chat.error}</Text> : null}
+          {chat.hasOlder && <GhostButton title={chat.loading ? '불러오는 중…' : '이전 메시지 보기'} onPress={chat.loadOlder} disabled={chat.loading} appRole={role} />}
+          {chat.messages.map((m) => (
+            <ChatBubble key={m.id} text={m.body} timeLabel={new Date(m.created_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} isMine={m.sender_id === session?.user.id} role={role} />
           ))}
         </ScrollView>
 
         <View style={styles.quickReplyRow}>
+          {!canSend && <Text style={T.bodyMD}>종료된 예약 또는 인증 전 계정은 메시지를 보낼 수 없습니다.</Text>}
           {quickReplies.map((q) => (
-            <Pressable key={q} style={styles.quickReplyChip} onPress={() => handleSend(q)}>
+            <Pressable key={q} style={styles.quickReplyChip} disabled={!canSend || chat.sending} onPress={() => void handleSend(q)}>
               <Text style={[T.labelMD, { color: AppColors.inkSecondary }]} numberOfLines={1}>
                 {q}
               </Text>
@@ -90,11 +98,13 @@ export default function ChatScreen() {
             style={[styles.input, T.bodyLG]}
             placeholder="메시지 보내기"
             placeholderTextColor={AppColors.neutral}
+            editable={canSend && !chat.sending}
+            maxLength={2000}
             value={draft}
             onChangeText={setDraft}
             onSubmitEditing={() => handleSend(draft)}
           />
-          <Pressable style={styles.sendButton} onPress={() => handleSend(draft)}>
+          <Pressable style={styles.sendButton} disabled={!canSend || chat.sending || !draft.trim()} onPress={() => handleSend(draft)}>
             <Ionicons name="arrow-up" size={18} color={AppColors.ink} />
           </Pressable>
         </View>

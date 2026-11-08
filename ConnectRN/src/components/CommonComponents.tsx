@@ -1,3 +1,5 @@
+import { useNavigation } from '@react-navigation/native';
+import StorePhoto from './StorePhoto';
 import React, { useState } from 'react';
 import { FlatList, Image, Modal, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -5,18 +7,19 @@ import { Pressable } from 'react-native';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
 import { Typography, type AppRole } from '../theme/typography';
-import { useTypography } from '../state/AppState';
+import { useAppState, useTypography } from '../state/AppState';
 import type { Store } from '../models/types';
 import Card from './Card';
 
 export function ConnectHomeHeader() {
+  const navigation = useNavigation<any>(); const { isPreview } = useAppState();
   return (
     <View style={styles.headerRow}>
       <Ionicons name="location-outline" size={18} color={AppColors.primaryDeep} />
       <View style={styles.headerSpacer} />
       <Text style={styles.headerTitle}>Connect</Text>
       <View style={styles.headerSpacer} />
-      <Ionicons name="notifications-outline" size={18} color={AppColors.ink} />
+      <Pressable accessibilityRole="button" accessibilityLabel="알림" disabled={isPreview} onPress={() => navigation.navigate('NotificationInbox')} hitSlop={12}><Ionicons name="notifications-outline" size={18} color={AppColors.ink} /></Pressable>
     </View>
   );
 }
@@ -82,9 +85,7 @@ export function StoreCard({ store, photoUri }: { store: Store; photoUri?: string
         {photoUri ? (
           <Image source={{ uri: photoUri }} style={styles.storeImage} resizeMode="cover" />
         ) : (
-          <View style={styles.storeImage}>
-            <Ionicons name="restaurant-outline" size={36} color="rgba(255,255,255,0.6)" />
-          </View>
+          <StorePhoto path={store.photoPath} style={styles.storeImage} />
         )}
         <View style={styles.favoriteBadge}>
           <Ionicons
@@ -179,18 +180,23 @@ export function PickerField({
   value,
   options,
   onChange,
+  disabled = false,
+  appRole = 'booker',
 }: {
+  disabled?: boolean;
+  appRole?: AppRole;
   placeholder: string;
   value: string;
   options: string[];
   onChange: (value: string) => void;
 }) {
+  const T = useTypography(appRole);
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Pressable style={styles.pickerField} onPress={() => setOpen(true)}>
-        <Text style={[styles.pickerFieldText, { color: value ? AppColors.ink : AppColors.neutral }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={placeholder} accessibilityState={{ disabled, expanded: open }} disabled={disabled} style={styles.pickerField} onPress={() => setOpen(true)}>
+        <Text style={[styles.pickerFieldText, T.bodyLG, { color: value ? AppColors.ink : AppColors.neutral }]}>
           {value || placeholder}
         </Text>
         <Ionicons name="chevron-down" size={16} color={AppColors.inkSecondary} />
@@ -203,13 +209,14 @@ export function PickerField({
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <Pressable
+                  accessibilityRole="button" accessibilityState={{ selected: value === item }}
                   style={styles.pickerOption}
                   onPress={() => {
                     onChange(item);
                     setOpen(false);
                   }}
                 >
-                  <Text style={styles.pickerOptionText}>{item}</Text>
+                  <Text style={[styles.pickerOptionText, T.bodyLG]}>{item}</Text>
                 </Pressable>
               )}
             />

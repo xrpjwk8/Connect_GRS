@@ -1,3 +1,4 @@
+import useNativeBack from '../../navigation/useNativeBack';
 import { rpc } from '../../services/backend';
 import { useServerAction, useRefreshOnFocus } from '../../hooks/useServer';
 import { showAlert } from '../../utils/alert';
@@ -34,6 +35,7 @@ function addThirtyMinutes(time: string): string {
 }
 
 export default function ManualReservationScreen() {
+  const goBack = useNativeBack();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { myReservations, ownerStore } = useAppState();
@@ -97,7 +99,7 @@ export default function ManualReservationScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel="뒤로가기" onPress={goBack} hitSlop={12}>
           <Ionicons name="chevron-back" size={18} color={AppColors.ink} />
         </Pressable>
         <Text style={styles.topBarTitle}>새 예약 등록</Text>

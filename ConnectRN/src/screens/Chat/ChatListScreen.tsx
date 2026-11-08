@@ -17,9 +17,9 @@ export default function ChatListScreen() {
   const T = useTypography(selectedRole === 'owner' ? 'owner' : 'booker');
 
   const threads = useMemo(() => {
-    const chattable = myReservations.filter((r) => r.status === 'confirmed' || r.status === 'pending');
+    const chattable = myReservations.filter((r) => !r.isManual);
     return isOwner ? chattable.filter((r) => r.storeId === ownerStore?.id) : chattable;
-  }, [myReservations, isOwner]);
+  }, [myReservations, isOwner, ownerStore?.id]);
 
   const lastMessageOf = (reservationId: string): ChatMessage | undefined => {
     const list = chatMessages.filter((m) => m.reservationId === reservationId);
@@ -29,7 +29,7 @@ export default function ChatListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[T.titleMD, { color: AppColors.ink }]}>채팅 · 준비 중</Text>
+        <Text style={[T.titleMD, { color: AppColors.ink }]}>채팅</Text>
       </View>
 
       {threads.length === 0 ? (
@@ -37,7 +37,7 @@ export default function ChatListScreen() {
           <Ionicons name="chatbubbles-outline" size={36} color={AppColors.inkSecondary} />
           <Text style={[T.titleMD, { color: AppColors.ink }]}>{isPreview ? '테스트 미리보기에서는 채팅할 수 없어요' : '대화 중인 예약이 없어요'}</Text>
           <Text style={[T.bodyMD, { color: AppColors.inkSecondary, textAlign: 'center' }]}>
-            {isPreview ? '실제 계정에서 학생증을 제출해주세요. 채팅은 준비 중입니다.' : !isOwner && !canBook ? studentRestriction : '채팅 기능은 준비 중입니다.'}
+            {isPreview ? '실제 계정에서 학생증을 제출해주세요. 실제 계정으로 로그인한 뒤 이용해주세요.' : !isOwner && !canBook ? studentRestriction : '예약 신청 후 점주와 대화할 수 있습니다.'}
           </Text>
         </View>
       ) : (

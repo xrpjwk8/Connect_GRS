@@ -1,3 +1,6 @@
+import NotificationInboxScreen from '../screens/Notifications/NotificationInboxScreen';
+import NotificationReservationScreen from '../screens/Notifications/NotificationReservationScreen';
+import ChatScreen from '../screens/Chat/ChatScreen';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RoleSelectionScreen from '../screens/Root/RoleSelectionScreen';
@@ -23,6 +26,11 @@ export default function RootNavigator() {
   }), []);
   return <Stack.Navigator screenOptions={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: false }} screenListeners={{ state }}>
     <Stack.Screen name="Main" component={Main} />
+    {app.session && app.profile && !app.isPreview && <>
+      <Stack.Screen name="NotificationInbox" component={NotificationInboxScreen} />
+      <Stack.Screen name="NotificationReservation" component={NotificationReservationScreen} />
+      <Stack.Screen name="NotificationChat" component={ChatScreen} />
+    </>}
     <Stack.Screen name="AdminReview" component={StudentReviewScreen} />
   </Stack.Navigator>;
 }

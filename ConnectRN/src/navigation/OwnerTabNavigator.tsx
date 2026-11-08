@@ -39,7 +39,7 @@ function ReservationCalendarStackNavigator() {
       <ReservationCalendarStack.Screen
         name="ManualReservation"
         component={ManualReservationScreen}
-        options={{ presentation: 'modal', headerShown: false }}
+        options={{ presentation: 'card', animation: 'slide_from_right' }}
       />
     </ReservationCalendarStack.Navigator>
   );

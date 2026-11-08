@@ -15,7 +15,7 @@ import { GhostButton } from '../../components/Buttons';
 export default function StoreProfileScreen() {
   const navigation = useNavigation<any>();
   useRefreshOnFocus();
-  const { ownerStore, logout, ownerFontScale, setOwnerFontScale, isAdmin, setAdminPanelOpen } = useAppState();
+  const { isPreview, ownerStore, logout, ownerFontScale, setOwnerFontScale, isAdmin, setAdminPanelOpen } = useAppState();
   const Typography = useTypography('owner');
   const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
@@ -51,6 +51,7 @@ export default function StoreProfileScreen() {
           </View>
         </View>
 
+        {!isPreview && <MenuRow icon="notifications-outline" title="예약·채팅 알림" onPress={() => navigation.navigate('NotificationInbox')} styles={styles} />}
         <MenuRow
           icon="storefront-outline"
           title="가게정보 관리"

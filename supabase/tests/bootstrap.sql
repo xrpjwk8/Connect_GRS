@@ -28,3 +28,12 @@ create table storage.objects (
 alter table storage.objects enable row level security;
 grant usage on schema storage to anon, authenticated;
 grant select,insert,update,delete on storage.objects to anon,authenticated;
+
+-- TEST ONLY push transport: captures requests without network access.
+create schema net;
+create table net._http_response(id bigint primary key, status_code integer, content text, error_msg text, timed_out boolean default false);
+create table net.test_requests(id bigint generated always as identity primary key, url text, body jsonb);
+create function net.http_post(url text, body jsonb default '{}'::jsonb, params jsonb default '{}'::jsonb, headers jsonb default '{}'::jsonb, timeout_milliseconds integer default 1000)
+returns bigint language plpgsql as $$ declare request_id bigint; begin
+ insert into net.test_requests(url,body) values(url,body) returning id into request_id; return request_id;
+end $$;

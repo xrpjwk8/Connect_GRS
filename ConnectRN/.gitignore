@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase client config is provided per build environment
+google-services.json
+# Never commit service-account credential exports
+*service-account*.json
+credentials.json

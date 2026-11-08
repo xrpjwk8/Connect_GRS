@@ -64,7 +64,7 @@ export default function StudentVerificationScreen() {
       <DataStatus />
       {app.isPreview ? <Text style={T.bodyLG}>테스트 미리보기에서는 파일 선택·교체·제거만 체험할 수 있어요. 선택한 파일은 서버에 전송되지 않습니다.</Text> : null}
       {status === 'pending' && <Text style={T.bodyLG}>관리자가 확인 중입니다. 승인 전에도 앱을 둘러볼 수 있으며 예약·채팅은 승인 후 이용할 수 있습니다.</Text>}
-      {status === 'approved' && <Text style={T.bodyLG}>학생증 인증이 완료되어 예약을 신청할 수 있습니다. 이름이나 학교를 변경하면 재인증이 필요합니다. 채팅은 별도로 준비 중입니다.</Text>}
+      {status === 'approved' && <Text style={T.bodyLG}>학생증 인증이 완료되어 예약을 신청할 수 있습니다. 이름이나 학교를 변경하면 재인증이 필요합니다. 예약을 신청한 매장과 채팅할 수 있습니다.</Text>}
       {verification?.rejection_reason ? <Text accessibilityRole="alert" style={[T.bodyLG, { color: AppColors.danger }]}>{verification.rejection_reason}</Text> : null}
       {verification && !app.isPreview && <StudentDocumentPreview key={verification.request_id} path={verification.document_path} />}
       {(canSubmit || app.isPreview) && <>

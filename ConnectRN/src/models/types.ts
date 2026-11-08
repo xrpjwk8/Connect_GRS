@@ -34,6 +34,7 @@ export interface Store {
   acceptanceRate: number;
   location: string;
   imageName: string;
+  photoPath?: string | null;
   keywords: string[];
   isFavorite: boolean;
 }

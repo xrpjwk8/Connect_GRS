@@ -13,11 +13,11 @@ const compiled = ts.transpileModule(source, { compilerOptions: {
   jsx: ts.JsxEmit.React, esModuleInterop: true,
 } }).outputText;
 
-function renderSignup(session, values = {}, development = true) {
+function renderSignup(session, values = {}, development = true, role = 'booker') {
   let stateIndex = 0;
-  const stateNames = ["useEmailAuth", "email", "code", "sentTo", "cooldown", "name", "school", "department", "position", "agreed", "actionBusy", "error"];
+  const stateNames = ["useEmailAuth", "email", "code", "sentTo", "cooldown", "requestingCode", "name", "school", "department", "position", "agreed", "actionBusy", "error"];
   const box = ({ children }) => React.createElement('div', null, children);
-  const button = ({ title, disabled }) => React.createElement('button', { disabled }, title);
+  const button = ({ title, disabled, loading }) => React.createElement('button', { disabled, ...(loading ? { 'aria-busy': true } : {}) }, title);
   const dependencies = {
     '../navigation/useNativeBack': { __esModule: true, default: () => () => {} },
     react: { ...React, useState(initial) { const key = stateNames[stateIndex++]; return React.useState(key in values ? values[key] : initial); } },
@@ -39,7 +39,7 @@ function renderSignup(session, values = {}, development = true) {
     return dependencies[name];
   } };
   vm.runInNewContext(compiled, sandbox);
-  return renderToStaticMarkup(React.createElement(sandbox.exports.default, { role: 'booker', signup: true }));
+  return renderToStaticMarkup(React.createElement(sandbox.exports.default, { role, signup: true }));
 }
 
 test('verified user remount resumes profile completion, never development preview', () => {
@@ -82,5 +82,18 @@ test('release signup never exposes development preview or its return button', ()
     assert.doesNotMatch(html, /테스트 미리보기|개발용|실제 가입/);
     assert.match(html, /인증번호 요청/);
     assert.match(html, /인증하고 계속/);
+  }
+});
+
+
+test('both signup roles show progress throughout request and resend cooldown', () => {
+  for (const role of ['booker', 'owner']) {
+    for (const values of [{ requestingCode: true, actionBusy: true }, { cooldown: 42 }]) {
+      const html = renderSignup(null, { email: 'test@example.com', ...values }, false, role);
+      assert.match(html, /<button disabled="" aria-busy="true">(인증번호 요청 중…|42초 후 재요청)<\/button>/);
+    }
+    const ready = renderSignup(null, { email: 'test@example.com' }, false, role);
+    assert.match(ready, /<button>인증번호 요청<\/button>/);
+    if (role === 'owner') assert.match(ready, /점주 성함/);
   }
 });

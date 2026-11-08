@@ -1,3 +1,4 @@
+import StorePhoto from '../../components/StorePhoto';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -122,7 +123,7 @@ export default function StoreDetailScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {!canBook && !isPreview && <Text style={{ padding: 18, color: AppColors.primaryDeep }}>{studentRestriction}</Text>}
         <View style={styles.headerImage}>
-          <Ionicons name={store.imageName as any} size={48} color="rgba(255,255,255,0.45)" />
+          <StorePhoto path={store.photoPath} style={StyleSheet.absoluteFill} />
           <Pressable style={styles.backBadge} onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="chevron-back" size={20} color={AppColors.white} />
           </Pressable>

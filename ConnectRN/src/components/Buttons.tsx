@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, PressableProps, StyleSheet, Text, TextStyle } from 'react-native';
+import { ActivityIndicator, View, Pressable, PressableProps, StyleSheet, Text, TextStyle } from 'react-native';
 import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
 import { AppSpacing } from '../theme/spacing';
@@ -32,22 +32,26 @@ export function PrimaryFilledButton({ title, style, appRole = 'booker', ...props
   );
 }
 
-export function LimeButton({ title, style, appRole = 'booker', ...props }: AppButtonProps) {
+export function LimeButton({ title, style, appRole = 'booker', loading = false, ...props }: AppButtonProps & { loading?: boolean }) {
   const T = useTypography(appRole);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: !!props.disabled }}
+      accessibilityState={{ disabled: !!props.disabled || loading, busy: loading }}
       {...props}
+      disabled={props.disabled || loading}
       style={(state) => [
         styles.base,
         styles.lime,
         state.pressed && styles.pressed,
         typeof style === 'function' ? style(state) : style,
-        props.disabled && { opacity: 0.45 },
+        props.disabled && !loading && { opacity: 0.45 },
       ]}
     >
-      <Text style={[T.titleMD, { color: AppColors.ink, textAlign: 'center' }]}>{title}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        {loading && <ActivityIndicator size="small" color={AppColors.ink} />}
+        <Text style={[T.titleMD, { color: AppColors.ink, textAlign: 'center' }]}>{title}</Text>
+      </View>
     </Pressable>
   );
 }

@@ -1,6 +1,7 @@
 import type { StoreRow } from '../utils/reservation';
 
 export const previewStore: StoreRow = {
+  photo_path: null,
   id: 'preview-store', owner_id: 'preview-owner', name: '테스트 매장 · 캠퍼스 포차',
   region: '신촌', category: '술집', capacity: 45, opening_minute: 1020, closing_minute: 1470,
   allow_shared: true, approved: false, description: '화면 확인용 예시 매장입니다. 실제 예약은 전송되지 않습니다.', created_at: '',
