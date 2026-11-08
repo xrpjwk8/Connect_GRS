@@ -1,3 +1,7 @@
+import { rpc } from '../../services/backend';
+import { useServerAction, useRefreshOnFocus } from '../../hooks/useServer';
+import { showAlert } from '../../utils/alert';
+import DataStatus from '../../components/DataStatus';
 import React, { useState } from 'react';
 import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,16 +12,12 @@ import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
-import { ownerStore } from '../../models/mockData';
 import { TagLabel } from '../../components/CommonComponents';
 import { GhostButton, LimeButton } from '../../components/Buttons';
 import Card from '../../components/Card';
 import type { MyReservation } from '../../models/types';
 
-function useReservationThumbUri(res: MyReservation): string | null {
-  const { storePhotoSquareUri } = useAppState();
-  return res.storeId === ownerStore.id ? storePhotoSquareUri : null;
-}
+function useReservationThumbUri(_res: MyReservation): string | null { return null; }
 
 type FilterKey = 'ongoing' | 'done' | 'cancelled';
 const FILTERS: { key: FilterKey; label: string }[] = [
@@ -35,7 +35,9 @@ function dateAscending(a: MyReservation, b: MyReservation): number {
 
 export default function MyReservationsScreen() {
   const navigation = useNavigation<any>();
-  const { myReservations, setMyReservations } = useAppState();
+  const { myReservations, ownerStore } = useAppState();
+  const action = useServerAction();
+  useRefreshOnFocus();
   const [filter, setFilter] = useState<FilterKey>('ongoing');
 
   const pendingList = myReservations.filter((r) => r.status === 'pending').sort(dateAscending);
@@ -45,14 +47,12 @@ export default function MyReservationsScreen() {
   const rejectedList = myReservations.filter((r) => r.status === 'rejected').sort(dateAscending);
 
   const handleCancel = (res: MyReservation) => {
-    Alert.alert('신청을 취소하시겠습니까?', '이 예약 신청을 정말 취소하시겠습니까? 취소 후에는 되돌릴 수 없어요.', [
+    showAlert('신청을 취소하시겠습니까?', '이 예약 신청을 정말 취소하시겠습니까? 취소 후에는 되돌릴 수 없어요.', [
       { text: '아니요', style: 'cancel' },
       {
         text: '예, 취소합니다',
         style: 'destructive',
-        onPress: () => {
-          setMyReservations(myReservations.map((r) => (r.id === res.id ? { ...r, status: 'cancelled' } : r)));
-        },
+        onPress: () => { void action.run(() => rpc('cancel_reservation', { p_reservation_id: res.id })); },
       },
     ]);
   };
@@ -63,7 +63,7 @@ export default function MyReservationsScreen() {
         <Text style={styles.headerTitle}>내 예약</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent}><DataStatus />
         <View style={styles.filterRow}>
           {FILTERS.map((f) => {
             const selected = f.key === filter;
@@ -225,13 +225,13 @@ function ReservationCard({
   const { storeNaverMapUrl, storeKakaoMapUrl } = useAppState();
 
   const handleLocationGuide = () => {
-    const mapUrl = res.storeId === ownerStore.id ? storeNaverMapUrl || storeKakaoMapUrl : null;
+    const mapUrl: string | null = null; // Map links arrive with store media in the next phase.
     if (!mapUrl) {
-      Alert.alert('위치 정보 없음', '점주가 아직 지도 링크를 등록하지 않았어요.');
+      showAlert('위치 정보 없음', '점주가 아직 지도 링크를 등록하지 않았어요.');
       return;
     }
     Linking.openURL(mapUrl).catch(() => {
-      Alert.alert('열 수 없어요', '등록된 지도 링크가 올바르지 않아요.');
+      showAlert('열 수 없어요', '등록된 지도 링크가 올바르지 않아요.');
     });
   };
 

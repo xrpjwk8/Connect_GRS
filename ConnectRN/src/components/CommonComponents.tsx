@@ -98,14 +98,14 @@ export function StoreCard({ store, photoUri }: { store: Store; photoUri?: string
       <View style={styles.storeBody}>
         <View style={styles.storeTitleRow}>
           <Text style={styles.storeName}>{store.name}</Text>
-          <RatingView rating={store.rating} count={store.reviewCount} />
+          {store.metricsAvailable !== false ? <RatingView rating={store.rating} count={store.reviewCount} /> : null}
         </View>
 
         <View style={styles.storeMetaRow}>
           <Ionicons name="people-outline" size={11} color={AppColors.inkSecondary} />
           <Text style={styles.storeMetaText}>최대 {store.maxCapacity}석</Text>
           <View style={{ flex: 1 }} />
-          <Text style={styles.storePrice}>₩{store.pricePerPerson.toLocaleString()}~</Text>
+          <Text style={styles.storePrice}>{store.metricsAvailable === false ? '가격 문의' : `₩${store.pricePerPerson.toLocaleString()}~`}</Text>
         </View>
 
         <View style={styles.storeKeywordsRow}>
@@ -113,7 +113,7 @@ export function StoreCard({ store, photoUri }: { store: Store; photoUri?: string
             <TagLabel key={keyword} text={keyword} />
           ))}
           <View style={{ flex: 1 }} />
-          <TagLabel text={`수락률 ${store.acceptanceRate}%`} color={AppColors.primary} textColor={AppColors.ink} />
+          {store.metricsAvailable !== false ? <TagLabel text={`수락률 ${store.acceptanceRate}%`} color={AppColors.primary} textColor={AppColors.ink} /> : null}
         </View>
       </View>
     </Card>

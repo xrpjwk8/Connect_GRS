@@ -1,251 +1,207 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import type { ChatMessage, MyReservation, SearchFilter, UserRole } from '../models/types';
-import { allReservations as mockAllReservations, initialChatMessages } from '../models/mockData';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState as NativeAppState, Platform } from 'react-native';
+import type { Session } from '@supabase/supabase-js';
+import type { ChatMessage, MyReservation, SearchFilter, Store, UserRole } from '../models/types';
+import { supabase, supabaseConfigured } from '../lib/supabase';
+import { developmentPreview, previewStore, previewRestriction } from '../lib/developmentPreview';
+import { errorMessage, rpc } from '../services/backend';
+import { mapReservation, mapStore, minuteLabel, type ProfileRow, type StoreRow } from '../utils/reservation';
+import { showAlert } from '../utils/alert';
 import { getTypography, type AppRole, type OwnerFontScale } from '../theme/typography';
+import { type StudentVerification, studentRestriction } from '../utils/studentVerification';
 
 export type Route = 'onboarding' | 'bookerTabs' | 'ownerTabs';
 export type OnboardingDestination = 'bookerSignUp' | 'ownerSignUp' | 'bookerLogin' | 'ownerLogin';
 
-interface AppStateValue {
-  route: Route;
-  onboardingPath: OnboardingDestination[];
-  selectedRole: UserRole | null;
-
-  schoolName: string;
-  setSchoolName: (v: string) => void;
-  departmentName: string;
-  setDepartmentName: (v: string) => void;
-  position: string;
-  setPosition: (v: string) => void;
-  realName: string;
-  setRealName: (v: string) => void;
-  schoolEmail: string;
-  setSchoolEmail: (v: string) => void;
-  phoneNumber: string;
-  setPhoneNumber: (v: string) => void;
-
-  profileImageUri: string | null;
-  setProfileImageUri: (v: string | null) => void;
-
-  selectedSearchDate: Date | null;
-  setSelectedSearchDate: (v: Date | null) => void;
-  lastSearchFilter: SearchFilter | null;
-  setLastSearchFilter: (v: SearchFilter | null) => void;
-
-  myReservations: MyReservation[];
-  setMyReservations: (v: MyReservation[]) => void;
-
-  // 예약 건당 채팅 메시지. 예약금 계좌 공유·입금 확인 용도 (실제 송금은 앱 밖에서 진행)
-  chatMessages: ChatMessage[];
-  sendChatMessage: (reservationId: string, senderRole: UserRole, text: string) => void;
-
-  // 시간대별 잔여 좌석만큼 중복 예약을 받을지 여부 (점주 설정)
-  capacityOverbookingEnabled: boolean;
-  setCapacityOverbookingEnabled: (v: boolean) => void;
-
-  // 점주가 수동으로 차단한 시간대. key: "YYYY-M-D", value: 차단된 슬롯 시작 시각 목록
-  blockedSlotsByDate: Record<string, string[]>;
-  setBlockedSlotsByDate: (v: Record<string, string[]>) => void;
-
-  // 점주 매장의 가로형(2:1) 대표 사진. 예약자 검색 결과 카드에 노출됨
-  storePhotoWideUri: string | null;
-  setStorePhotoWideUri: (v: string | null) => void;
-
-  // 점주 매장의 정사각형(1:1) 사진 (선택 사항). 예약자 "내 예약" 카드 썸네일에 노출됨
-  storePhotoSquareUri: string | null;
-  setStorePhotoSquareUri: (v: string | null) => void;
-
-  // 점주 매장의 외부 지도 링크. 예약자 "위치 안내" 버튼에서 열림
-  storeNaverMapUrl: string | null;
-  setStoreNaverMapUrl: (v: string | null) => void;
-  storeKakaoMapUrl: string | null;
-  setStoreKakaoMapUrl: (v: string | null) => void;
-
-  selectedBookerTab: number;
-  setSelectedBookerTab: (v: number) => void;
-
-  // 점주가 마이페이지에서 고르는 글씨 크기 (보통/크게/아주 크게)
-  ownerFontScale: OwnerFontScale;
-  setOwnerFontScale: (v: OwnerFontScale) => void;
-
-  goToBookerSignUp: () => void;
-  goToOwnerSignUp: () => void;
-  goToBookerLogin: () => void;
-  goToOwnerLogin: () => void;
-  cancelSignUp: () => void;
-  finishBookerSignUp: () => void;
-  finishOwnerSignUp: () => void;
-  logout: () => void;
-}
-
-const AppStateContext = createContext<AppStateValue | null>(null);
-
-export function AppStateProvider({ children }: { children: React.ReactNode }) {
-  const [route, setRoute] = useState<Route>('onboarding');
+function useStateValue() {
+  const [previewRole, setPreviewRole] = useState<UserRole | null>(null);
+  const isPreview = __DEV__ && previewRole !== null;
+  // Fast Refresh may retain React state while reloading the transport module.
+  if (isPreview && !developmentPreview.active) developmentPreview.enter();
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const sessionRef = useRef<Session | null>(null);
+  const generation = useRef(0);
+  const [ready, setReady] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [studentVerification, setStudentVerification] = useState<StudentVerification | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
+  const [studentVerificationOnEntry, setStudentVerificationOnEntry] = useState(false);
+  const [ownerStoreRow, setOwnerStoreRow] = useState<StoreRow | null>(null);
   const [onboardingPath, setOnboardingPath] = useState<OnboardingDestination[]>([]);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-
   const [schoolName, setSchoolName] = useState('');
   const [departmentName, setDepartmentName] = useState('');
   const [position, setPosition] = useState('');
   const [realName, setRealName] = useState('');
   const [schoolEmail, setSchoolEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-
   const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
-
   const [selectedSearchDate, setSelectedSearchDate] = useState<Date | null>(null);
   const [lastSearchFilter, setLastSearchFilter] = useState<SearchFilter | null>(null);
-
-  const [myReservations, setMyReservations] = useState<MyReservation[]>(mockAllReservations);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialChatMessages);
-
-  const [capacityOverbookingEnabled, setCapacityOverbookingEnabled] = useState(true);
+  const [myReservations, setMyReservations] = useState<MyReservation[]>([]);
   const [blockedSlotsByDate, setBlockedSlotsByDate] = useState<Record<string, string[]>>({});
+  const [favorites, setFavorites] = useState<Store[]>([]);
   const [storePhotoWideUri, setStorePhotoWideUri] = useState<string | null>(null);
   const [storePhotoSquareUri, setStorePhotoSquareUri] = useState<string | null>(null);
   const [storeNaverMapUrl, setStoreNaverMapUrl] = useState<string | null>(null);
   const [storeKakaoMapUrl, setStoreKakaoMapUrl] = useState<string | null>(null);
-
   const [selectedBookerTab, setSelectedBookerTab] = useState(0);
   const [ownerFontScale, setOwnerFontScale] = useState<OwnerFontScale>('normal');
 
-  const value = useMemo<AppStateValue>(
-    () => ({
-      route,
-      onboardingPath,
-      selectedRole,
-      schoolName,
-      setSchoolName,
-      departmentName,
-      setDepartmentName,
-      position,
-      setPosition,
-      realName,
-      setRealName,
-      schoolEmail,
-      setSchoolEmail,
-      phoneNumber,
-      setPhoneNumber,
-      profileImageUri,
-      setProfileImageUri,
-      selectedSearchDate,
-      setSelectedSearchDate,
-      lastSearchFilter,
-      setLastSearchFilter,
-      myReservations,
-      setMyReservations,
-      chatMessages,
-      sendChatMessage: (reservationId: string, senderRole: UserRole, text: string) => {
-        const trimmed = text.trim();
-        if (!trimmed) return;
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            reservationId,
-            senderRole,
-            text: trimmed,
-            timeLabel: new Date().toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' }),
-          },
-        ]);
-      },
-      capacityOverbookingEnabled,
-      setCapacityOverbookingEnabled,
-      blockedSlotsByDate,
-      setBlockedSlotsByDate,
-      storePhotoWideUri,
-      setStorePhotoWideUri,
-      storePhotoSquareUri,
-      setStorePhotoSquareUri,
-      storeNaverMapUrl,
-      setStoreNaverMapUrl,
-      storeKakaoMapUrl,
-      setStoreKakaoMapUrl,
-      selectedBookerTab,
-      setSelectedBookerTab,
-      ownerFontScale,
-      setOwnerFontScale,
+  const clearAccount = useCallback(() => {
+    setStudentVerificationOnEntry(false);
+    setStudentVerification(null); setIsAdmin(false); setAdminPanelOpen(false);
+    setProfile(null); setOwnerStoreRow(null); setMyReservations([]); setFavorites([]);
+    setBlockedSlotsByDate({}); setSchoolName(''); setDepartmentName(''); setPosition('');
+    setRealName(''); setSchoolEmail(''); setPhoneNumber(''); setProfileImageUri(null);
+    setStorePhotoWideUri(null); setStorePhotoSquareUri(null); setStoreNaverMapUrl(null); setStoreKakaoMapUrl(null);
+    setLastSearchFilter(null); setSelectedSearchDate(null); setSelectedBookerTab(0); setOwnerFontScale('normal');
+  }, []);
 
-      goToBookerSignUp: () => {
-        setSelectedRole('booker');
-        setOnboardingPath(['bookerSignUp']);
-      },
-      goToOwnerSignUp: () => {
-        setSelectedRole('owner');
-        setOnboardingPath(['ownerSignUp']);
-      },
-      goToBookerLogin: () => {
-        setSelectedRole('booker');
-        setOnboardingPath(['bookerLogin']);
-      },
-      goToOwnerLogin: () => {
-        setSelectedRole('owner');
-        setOnboardingPath(['ownerLogin']);
-      },
-      cancelSignUp: () => {
-        setOnboardingPath([]);
-      },
-      finishBookerSignUp: () => {
-        setRoute('bookerTabs');
-        setOnboardingPath([]);
-      },
-      finishOwnerSignUp: () => {
-        setRoute('ownerTabs');
-        setOnboardingPath([]);
-      },
-      logout: () => {
-        setSelectedRole(null);
-        setRoute('onboarding');
-        setOnboardingPath([]);
-        setSchoolName('');
-        setDepartmentName('');
-        setPosition('');
-        setRealName('');
-        setSchoolEmail('');
-        setPhoneNumber('');
-        setProfileImageUri(null);
-        setSelectedSearchDate(null);
-        setLastSearchFilter(null);
-        setSelectedBookerTab(0);
-      },
-    }),
-    [
-      route,
-      onboardingPath,
-      selectedRole,
-      schoolName,
-      departmentName,
-      position,
-      realName,
-      schoolEmail,
-      phoneNumber,
-      profileImageUri,
-      selectedSearchDate,
-      lastSearchFilter,
-      myReservations,
-      chatMessages,
-      capacityOverbookingEnabled,
-      blockedSlotsByDate,
-      storePhotoWideUri,
-      storePhotoSquareUri,
-      storeNaverMapUrl,
-      storeKakaoMapUrl,
-      selectedBookerTab,
-      ownerFontScale,
-    ]
-  );
+  const refresh = useCallback(async () => {
+    if (developmentPreview.active) { setReady(true); setRefreshing(false); return; }
+    const current = sessionRef.current;
+    const run = ++generation.current;
+    if (!current) { clearAccount(); setReady(true); setRefreshing(false); return; }
+    setRefreshing(true); setLoadError(null);
+    try {
+      const { data: admin, error: adminError } = await supabase.rpc('accept_admin_invitation');
+      if (adminError) throw adminError;
+      const { data: p, error: pe } = await supabase.from('profiles').select('*').eq('id', current.user.id).maybeSingle();
+      if (pe) throw pe;
+      const [stores, reservations, blocks, favoriteRows, verification] = await Promise.all([
+        supabase.from('stores').select('*').eq('owner_id', current.user.id).order('created_at').limit(1),
+        supabase.from('reservations').select('*, stores(name)').order('starts_at', { ascending: false }),
+        supabase.from('time_blocks').select('*'),
+        supabase.from('favorites').select('stores(*)').eq('user_id', current.user.id),
+        supabase.from('student_verifications').select('*').eq('user_id', current.user.id).maybeSingle(),
+      ]);
+      for (const response of [stores, reservations, blocks, favoriteRows, verification]) if (response.error) throw response.error;
+      if (generation.current !== run || sessionRef.current?.user.id !== current.user.id) return;
+      setProfile(p); setOwnerStoreRow(stores.data?.[0] ?? null);
+      setIsAdmin(admin === true); setStudentVerification(verification.data);
+      setMyReservations((reservations.data ?? []).map(r => mapReservation(r, r.stores?.name ?? '매장')));
+      const blocked: Record<string, string[]> = {};
+      for (const b of blocks.data ?? []) {
+        if (b.store_id !== stores.data?.[0]?.id) continue;
+        const date = b.service_date.split('-').map(Number).join('-');
+        (blocked[date] ??= []).push(minuteLabel(b.start_minute));
+      }
+      setBlockedSlotsByDate(blocked);
+      setFavorites((favoriteRows.data ?? []).flatMap(f => f.stores ? [{ ...mapStore(f.stores), isFavorite: true }] : []));
+      if (p) {
+        setSelectedRole(p.role as UserRole); setSchoolName(p.school_name); setDepartmentName(p.department_name);
+        setPosition(p.position); setRealName(p.real_name);
+      }
+      setSchoolEmail(current.user.email ?? ''); setPhoneNumber(current.user.phone ?? '');
+    } catch (error) {
+      if (generation.current === run) setLoadError(errorMessage(error));
+      throw error;
+    } finally {
+      if (generation.current === run) { setRefreshing(false); setReady(true); }
+    }
+  }, [clearAccount]);
 
+  useEffect(() => {
+    if (!supabaseConfigured) { setLoadError('Supabase 연결 설정이 없습니다. .env.local을 확인해주세요.'); setReady(true); return; }
+    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+      const changed = sessionRef.current?.user.id !== next?.user.id;
+      sessionRef.current = next;
+      if (developmentPreview.active) { setSession(next); return; }
+      if (changed) { ++generation.current; clearAccount(); setReady(false); }
+      if (!next) { setOnboardingPath([]); setSelectedRole(null); }
+      setSession(next);
+    });
+    supabase.auth.getSession().then(({ error }) => {
+      if (error) { setLoadError(errorMessage(error)); setReady(true); }
+    }).catch(error => { setLoadError(errorMessage(error)); setReady(true); });
+    const subscription = NativeAppState.addEventListener('change', state => {
+      if (state === 'active') {
+        if (developmentPreview.active) return;
+        if (Platform.OS !== 'web') supabase.auth.startAutoRefresh();
+        if (sessionRef.current) void refresh().catch(() => {});
+      } else if (Platform.OS !== 'web') supabase.auth.stopAutoRefresh();
+    });
+    if (Platform.OS !== 'web') supabase.auth.startAutoRefresh();
+    return () => { ++generation.current; data.subscription.unsubscribe(); subscription.remove(); supabase.auth.stopAutoRefresh(); };
+  }, [clearAccount, refresh]);
+
+  const userId = session?.user.id;
+  useEffect(() => {
+    if (session === undefined || !supabaseConfigured) return;
+    void refresh().catch(() => {});
+    // Token refreshes keep the same account; don't erase edits or refetch every token event.
+  }, [userId, session === undefined, refresh]);
+
+  const logout = useCallback(async () => {
+    if (developmentPreview.active) {
+      developmentPreview.exit(); setPreviewRole(null); clearAccount();
+      setSelectedRole(null); setOnboardingPath([]); setLoadError(null);
+      if (Platform.OS !== 'web') supabase.auth.startAutoRefresh();
+      await refresh().catch(() => {});
+      return;
+    }
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    if (error) { showAlert('로그아웃 실패', errorMessage(error)); return; }
+    ++generation.current; sessionRef.current = null; setSession(null); clearAccount();
+    setSelectedRole(null); setOnboardingPath([]); setLoadError(null); setReady(true);
+  }, [clearAccount, refresh]);
+  const enterPreview = (role: UserRole, draft: { name: string; school: string; department: string; position: string; email: string }) => {
+    developmentPreview.enter();
+    ++generation.current; supabase.auth.stopAutoRefresh(); clearAccount();
+    setPreviewRole(role); setSelectedRole(role); setOnboardingPath([]);
+    setRealName(draft.name.trim()); setSchoolName(draft.school.trim());
+    setDepartmentName(draft.department.trim()); setPosition(draft.position.trim()); setSchoolEmail(draft.email.trim());
+    if (role === 'owner') setOwnerStoreRow(previewStore);
+    setLoadError(null); setRefreshing(false); setReady(true);
+  };
+  const navigateAuth = (role: UserRole, destination: OnboardingDestination) => {
+    setSelectedRole(role); setOnboardingPath([destination]);
+  };
+  const ownerStore = useMemo(() => ownerStoreRow ? mapStore(ownerStoreRow) : null, [ownerStoreRow]);
+  const route: Route = isPreview ? (previewRole === 'owner' ? 'ownerTabs' : 'bookerTabs')
+    : !session || !profile ? 'onboarding' : profile.role === 'owner' ? 'ownerTabs' : 'bookerTabs';
+  return {
+    route, session: isPreview ? null : session, profile, ready, refreshing, loadError, refresh, ownerStore, ownerStoreRow, favorites,
+    isPreview, enterPreview, studentVerification, isAdmin, adminPanelOpen, setAdminPanelOpen,
+    studentVerificationOnEntry, setStudentVerificationOnEntry,
+    canBook: !isPreview && profile?.role === 'booker' && studentVerification?.status === 'approved',
+    onboardingPath, selectedRole, schoolName, setSchoolName, departmentName, setDepartmentName,
+    position, setPosition, realName, setRealName, schoolEmail, setSchoolEmail, phoneNumber, setPhoneNumber,
+    profileImageUri, setProfileImageUri, selectedSearchDate, setSelectedSearchDate, lastSearchFilter, setLastSearchFilter,
+    myReservations, blockedSlotsByDate,
+    capacityOverbookingEnabled: ownerStoreRow?.allow_shared ?? true,
+    storePhotoWideUri, setStorePhotoWideUri, storePhotoSquareUri, setStorePhotoSquareUri,
+    storeNaverMapUrl, setStoreNaverMapUrl, storeKakaoMapUrl, setStoreKakaoMapUrl,
+    selectedBookerTab, setSelectedBookerTab, ownerFontScale, setOwnerFontScale,
+    chatMessages: [] as ChatMessage[],
+    sendChatMessage: (_id: string, _role: UserRole, _text: string) => showAlert('채팅 안내', isPreview ? previewRestriction
+      : profile?.role === 'booker' && studentVerification?.status !== 'approved' ? studentRestriction : '채팅 기능은 아직 연결되지 않았습니다.'),
+    goToBookerSignUp: () => navigateAuth('booker', 'bookerSignUp'),
+    goToOwnerSignUp: () => navigateAuth('owner', 'ownerSignUp'),
+    goToBookerLogin: () => navigateAuth('booker', 'bookerLogin'),
+    goToOwnerLogin: () => navigateAuth('owner', 'ownerLogin'),
+    cancelSignUp: () => setOnboardingPath([]), logout,
+    saveProfile: async (name: string, school: string, department: string, job: string) => {
+      if (!profile) throw new Error('로그인이 필요합니다.');
+      await rpc('complete_profile', { p_role: profile.role, p_real_name: name, p_school_name: school,
+        p_department_name: department, p_position: job });
+    },
+  };
+}
+const AppStateContext = createContext<ReturnType<typeof useStateValue> | null>(null);
+export function AppStateProvider({ children }: { children: React.ReactNode }) {
+  const value = useStateValue();
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }
-
-export function useAppState(): AppStateValue {
-  const ctx = useContext(AppStateContext);
-  if (!ctx) throw new Error('useAppState must be used within AppStateProvider');
-  return ctx;
+export function useAppState() {
+  const value = useContext(AppStateContext);
+  if (!value) throw new Error('useAppState must be used within AppStateProvider');
+  return value;
 }
-
-// role별 타이포 스케일. owner는 사용자가 마이페이지에서 고른 ownerFontScale을 반영한다.
 export function useTypography(role: AppRole): Record<string, import('react-native').TextStyle> {
   const { ownerFontScale } = useAppState();
   return useMemo(() => getTypography(role, ownerFontScale), [role, ownerFontScale]);

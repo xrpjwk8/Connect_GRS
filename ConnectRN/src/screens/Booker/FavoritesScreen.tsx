@@ -7,13 +7,17 @@ import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
-import { favorites } from '../../models/mockData';
+import { useAppState } from '../../state/AppState';
+import { useRefreshOnFocus } from '../../hooks/useServer';
+import DataStatus from '../../components/DataStatus';
 import { RatingView } from '../../components/CommonComponents';
 import Card from '../../components/Card';
 import type { Store } from '../../models/types';
 
 export default function FavoritesScreen() {
   const navigation = useNavigation<any>();
+  const { favorites } = useAppState();
+  useRefreshOnFocus();
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.titleBar}>
@@ -24,9 +28,9 @@ export default function FavoritesScreen() {
         <View style={{ width: 22 }} />
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.infoRow}>
+        <DataStatus /><View style={styles.infoRow}>
           <Ionicons name="information-circle-outline" size={16} color={AppColors.inkSecondary} />
-          <Text style={styles.infoText}>최대 3곳까지 찜 가능해요. 가장 마음에 드는 가게를 골라보세요.</Text>
+          <Text style={styles.infoText}>마음에 드는 가게를 저장하고 다시 찾아보세요.</Text>
         </View>
 
         {favorites.map((store) => (
@@ -38,6 +42,7 @@ export default function FavoritesScreen() {
 }
 
 function FavoriteCard({ store }: { store: Store }) {
+  const navigation = useNavigation<any>();
   return (
     <Card padding={0} style={styles.card}>
       <View style={styles.cardImageWrap}>
@@ -50,14 +55,14 @@ function FavoriteCard({ store }: { store: Store }) {
       <View style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
           <Text style={styles.storeName}>{store.name}</Text>
-          <RatingView rating={store.rating} count={null} />
+          {store.metricsAvailable !== false ? <RatingView rating={store.rating} count={null} /> : null}
         </View>
 
         <View style={styles.cardMetaRow}>
           <Ionicons name="people-outline" size={14} color={AppColors.inkSecondary} />
           <Text style={styles.cardMetaText}>최대 {store.maxCapacity}명</Text>
           <View style={{ flex: 1 }} />
-          <Pressable style={styles.reserveButton}>
+          <Pressable style={styles.reserveButton} onPress={() => navigation.navigate('StoreDetail', { store })}>
             <Text style={styles.reserveButtonText}>예약하기</Text>
           </Pressable>
         </View>

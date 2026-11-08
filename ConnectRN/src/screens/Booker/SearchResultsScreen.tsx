@@ -7,7 +7,8 @@ import { AppColors } from '../../theme/colors';
 import { AppSpacing } from '../../theme/spacing';
 import { Typography } from '../../theme/typography';
 import { useAppState } from '../../state/AppState';
-import { ownerStore, searchResults } from '../../models/mockData';
+import { searchStores } from '../../services/backend';
+import { useServerQuery } from '../../hooks/useServer';
 import { StoreCard } from '../../components/CommonComponents';
 import type { SearchFilter, Store } from '../../models/types';
 
@@ -25,7 +26,10 @@ function formatFilterSummary(filter: SearchFilter | null): string {
 
 export default function SearchResultsScreen() {
   const navigation = useNavigation<any>();
-  const { lastSearchFilter, setLastSearchFilter, setSelectedSearchDate, storePhotoWideUri } = useAppState();
+  const { lastSearchFilter, setLastSearchFilter, setSelectedSearchDate } = useAppState();
+
+  const results = useServerQuery(JSON.stringify(lastSearchFilter), () => searchStores(lastSearchFilter));
+  const searchResults = results.data ?? [];
 
   const handleOpenFilter = () => {
     navigation.navigate('SearchFilter', {
@@ -54,10 +58,12 @@ export default function SearchResultsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.resultsTitle}>검색 결과 ({searchResults.length})</Text>
+        <Text style={styles.resultsTitle}>{results.loading ? '검색 중…' : '검색 결과'} ({searchResults.length})</Text>
+        {results.error ? <Pressable onPress={results.reload}><Text accessibilityRole="alert">{results.error} · 다시 시도</Text></Pressable> : null}
+        {!results.loading && !results.error && !searchResults.length ? <Text>조건에 맞는 승인된 매장이 없습니다.</Text> : null}
         {searchResults.map((store: Store) => (
           <Pressable key={store.id} onPress={() => navigation.navigate('StoreDetail', { store })}>
-            <StoreCard store={store} photoUri={store.id === ownerStore.id ? storePhotoWideUri : undefined} />
+            <StoreCard store={store} />
           </Pressable>
         ))}
       </ScrollView>

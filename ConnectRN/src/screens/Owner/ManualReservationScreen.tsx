@@ -1,3 +1,7 @@
+import { rpc } from '../../services/backend';
+import { useServerAction, useRefreshOnFocus } from '../../hooks/useServer';
+import { showAlert } from '../../utils/alert';
+import DataStatus from '../../components/DataStatus';
 import React, { useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,7 +10,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
-import { defaultTimeSlots, ownerStore } from '../../models/mockData';
+import { minuteLabel, serviceDate, slotSelection } from '../../utils/reservation';
 import { useAppState, useTypography } from '../../state/AppState';
 import { FormLabel, InfoBanner } from '../../components/CommonComponents';
 import { parseDateKey } from '../../utils/date';
@@ -14,7 +18,7 @@ import { parseDateKey } from '../../utils/date';
 const WEEKDAY_LETTERS = ['일', '월', '화', '수', '목', '금', '토'];
 const MEMO_LIMIT = 30;
 const MAX_CONSECUTIVE_SLOTS = 6;
-const OPEN_STARTS = defaultTimeSlots.filter((s) => s.state !== 'closed').map((s) => s.label.split(' ~ ')[0]);
+
 
 function toKoreanTime(time: string): string {
   const [hour, minute] = time.split(':');
@@ -32,7 +36,10 @@ function addThirtyMinutes(time: string): string {
 export default function ManualReservationScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { myReservations, setMyReservations } = useAppState();
+  const { myReservations, ownerStore } = useAppState();
+  const action = useServerAction();
+  useRefreshOnFocus();
+  const OPEN_STARTS = Array.from({ length: ((ownerStore?.closingMinute ?? 1470) - (ownerStore?.openingMinute ?? 1020)) / 30 }, (_, i) => minuteLabel((ownerStore?.openingMinute ?? 1020) + i * 30));
   const Typography = useTypography('owner');
   const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
@@ -45,6 +52,7 @@ export default function ManualReservationScreen() {
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [peopleText, setPeopleText] = useState('');
   const [bookerLabel, setBookerLabel] = useState('');
+  const [affiliation, setAffiliation] = useState('');
   const [memo, setMemo] = useState('');
   const peopleInputRef = useRef<TextInput>(null);
 
@@ -77,46 +85,14 @@ export default function ManualReservationScreen() {
       ? `${toKoreanTime(sortedTimes[0])} ~ ${toKoreanTime(addThirtyMinutes(sortedTimes[sortedTimes.length - 1]))}`
       : '';
 
-  const handleSubmit = () => {
-    if (sortedTimes.length === 0) {
-      Alert.alert('입력을 확인해주세요', '예약 시간대를 선택해주세요.');
-      return;
-    }
-    const peopleNum = Number(peopleText) || 0;
-    if (peopleNum < 1) {
-      Alert.alert('입력을 확인해주세요', '인원을 1명 이상 입력해주세요.');
-      return;
-    }
-    if (!bookerLabel.trim()) {
-      Alert.alert('입력을 확인해주세요', '예약자 / 단체명을 입력해주세요.');
-      return;
-    }
-
-    const timeLabel =
-      sortedTimes.length === 1 ? sortedTimes[0] : `${sortedTimes[0]} ~ ${sortedTimes[sortedTimes.length - 1]}`;
-    const dateLabel = `${selectedDateLabel} ${timeLabel}`;
-
-    setMyReservations([
-      {
-        id: `manual-${Date.now()}`,
-        storeId: ownerStore.id,
-        storeName: ownerStore.name,
-        imageSymbol: ownerStore.imageName,
-        status: 'confirmed',
-        dateLabel,
-        people: peopleNum,
-        bookerName: bookerLabel.trim() || '전화 예약',
-        dateValue: selectedDate,
-        timeLabels: sortedTimes,
-        eventPurpose: memo.trim(),
-        requestMessage: '점주가 직접 등록한 오프라인(전화) 예약입니다.',
-        isManual: true,
-      },
-      ...myReservations,
-    ]);
-
-    navigation.goBack();
-  };
+  const handleSubmit = () => action.run(async () => {
+    if (!ownerStore) throw new Error('매장을 등록해주세요.');
+    if (!bookerLabel.trim()) throw new Error('대표 예약자명을 입력해주세요.');
+    const payload = { p_store_id: ownerStore.id, p_service_date: serviceDate(selectedDate), ...slotSelection(sortedTimes),
+      p_people: Number(peopleText), p_booker_name: bookerLabel.trim(), p_booker_affiliation: affiliation.trim(), p_event_purpose: memo.trim() };
+    if (!Number.isInteger(payload.p_people) || payload.p_people < 1) throw new Error('인원을 확인해주세요.');
+    await rpc('create_manual_reservation', { ...payload, p_request_id: action.requestId(payload) });
+  }, () => navigation.goBack());
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -188,15 +164,24 @@ export default function ManualReservationScreen() {
         </View>
 
         <View style={styles.field}>
-          <FormLabel title="예약자 / 단체명" required appRole="owner" />
+          <FormLabel title="대표 예약자명" required appRole="owner" />
           <View style={styles.inputBox}>
             <TextInput
               style={styles.textInput}
               value={bookerLabel}
               onChangeText={setBookerLabel}
-              placeholder="예: 경영학과 학생회"
+              placeholder="예: 김민준"
+              maxLength={80}
               placeholderTextColor={AppColors.neutral}
             />
+          </View>
+        </View>
+
+        <View style={styles.field}>
+          <FormLabel title="소속 / 단체명 (선택)" appRole="owner" />
+          <View style={styles.inputBox}>
+            <TextInput style={styles.textInput} value={affiliation} onChangeText={setAffiliation}
+              maxLength={160} placeholder="예: 경영학과 학생회" placeholderTextColor={AppColors.neutral} />
           </View>
         </View>
 
@@ -219,7 +204,7 @@ export default function ManualReservationScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable style={styles.submitButton} onPress={handleSubmit}>
+        <Pressable style={styles.submitButton} onPress={handleSubmit} disabled={action.busy}>
           <Text style={styles.submitButtonText}>예약 등록하기</Text>
         </Pressable>
       </View>

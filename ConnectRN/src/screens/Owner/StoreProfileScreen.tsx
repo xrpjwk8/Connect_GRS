@@ -1,3 +1,5 @@
+import { useRefreshOnFocus } from '../../hooks/useServer';
+import DataStatus from '../../components/DataStatus';
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,12 +10,12 @@ import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { OWNER_FONT_SCALE_OPTIONS, type OwnerFontScale } from '../../theme/typography';
 import { useAppState, useTypography } from '../../state/AppState';
-import { ownerStore } from '../../models/mockData';
 import { GhostButton } from '../../components/Buttons';
 
 export default function StoreProfileScreen() {
   const navigation = useNavigation<any>();
-  const { logout, ownerFontScale, setOwnerFontScale } = useAppState();
+  useRefreshOnFocus();
+  const { ownerStore, logout, ownerFontScale, setOwnerFontScale, isAdmin, setAdminPanelOpen } = useAppState();
   const Typography = useTypography('owner');
   const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
@@ -23,14 +25,14 @@ export default function StoreProfileScreen() {
         <Text style={styles.titleText}>마이페이지</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent}><DataStatus />
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
             <Ionicons name="storefront-outline" size={26} color={AppColors.primaryDeep} />
           </View>
           <View style={{ flex: 1, gap: 4 }}>
-            <Text style={styles.storeLocation}>{ownerStore.location}</Text>
-            <Text style={styles.storeName}>{ownerStore.name}</Text>
+            <Text style={styles.storeLocation}>{ownerStore?.location}</Text>
+            <Text style={styles.storeName}>{ownerStore?.name}</Text>
           </View>
         </View>
 
@@ -55,6 +57,7 @@ export default function StoreProfileScreen() {
           onPress={() => navigation.navigate('StoreInfoEdit')}
           styles={styles}
         />
+        {isAdmin && <MenuRow icon="shield-checkmark-outline" title="관리자 학생증 심사" styles={styles} onPress={() => setAdminPanelOpen(true)} />}
         <MenuRow icon="card-outline" title="결제 수단 관리" styles={styles} />
         <MenuRow icon="document-text-outline" title="이용 약관" styles={styles} />
         <MenuRow icon="help-circle-outline" title="도움말 / FAQ" styles={styles} />
