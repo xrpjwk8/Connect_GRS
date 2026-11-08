@@ -13,9 +13,9 @@ const compiled = ts.transpileModule(source, { compilerOptions: {
   jsx: ts.JsxEmit.React, esModuleInterop: true,
 } }).outputText;
 
-function renderSignup(session, values = {}, development = true, role = 'booker') {
+function renderSignup(session, values = {}, development = true, role = 'booker', signup = true) {
   let stateIndex = 0;
-  const stateNames = ["useEmailAuth", "email", "code", "sentTo", "cooldown", "requestingCode", "name", "school", "department", "position", "agreed", "actionBusy", "error"];
+  const stateNames = ["useEmailAuth", "email", "code", "sentTo", "cooldown", "requestingCode", "name", "school", "department", "position", "agreed", "actionBusy", "error", "passwordMode", "password"];
   const box = ({ children }) => React.createElement('div', null, children);
   const button = ({ title, disabled, loading }) => React.createElement('button', { disabled, ...(loading ? { 'aria-busy': true } : {}) }, title);
   const dependencies = {
@@ -26,7 +26,7 @@ function renderSignup(session, values = {}, development = true, role = 'booker')
     '../state/AppState': { useAppState: () => ({ session, ready: true }), useTypography: () => ({}) },
     '../lib/supabase': { supabase: {} },
     '../services/backend': {},
-    './CommonComponents': { AppTextField: ({ placeholder }) => React.createElement('input', { placeholder }), FormLabel: ({ title, required }) => title + (required ? '*' : '') },
+    './CommonComponents': { AppTextField: ({ placeholder, secureTextEntry }) => React.createElement('input', { placeholder, type: secureTextEntry ? 'password' : 'text' }), FormLabel: ({ title, required }) => title + (required ? '*' : '') },
     './ScreenHeader': { __esModule: true, default: ({ title }) => title },
     '../theme/spacing': { AppSpacing: {} },
     '../theme/radius': { AppRadius: {} },
@@ -39,7 +39,7 @@ function renderSignup(session, values = {}, development = true, role = 'booker')
     return dependencies[name];
   } };
   vm.runInNewContext(compiled, sandbox);
-  return renderToStaticMarkup(React.createElement(sandbox.exports.default, { role, signup: true }));
+  return renderToStaticMarkup(React.createElement(sandbox.exports.default, { role, signup }));
 }
 
 test('verified user remount resumes profile completion, never development preview', () => {
@@ -95,5 +95,18 @@ test('both signup roles show progress throughout request and resend cooldown', (
     const ready = renderSignup(null, { email: 'test@example.com' }, false, role);
     assert.match(ready, /<button>인증번호 요청<\/button>/);
     if (role === 'owner') assert.match(ready, /점주 성함/);
+  }
+});
+
+
+test('password login is available for both roles, masked and requires credentials', () => {
+  for (const role of ['booker', 'owner']) {
+    const render = values => renderSignup(null, {passwordMode:true, ...values}, false, role, false);
+    assert.match(render({}), /type="password"/);
+    assert.match(render({}), /<button disabled="">로그인/);
+    assert.match(render({email:'review@example.com', password:'test-password'}), /<button>로그인/);
+    assert.doesNotMatch(render({}), /인증번호 요청|테스트 미리보기/);
+    assert.match(renderSignup(null, {}, false, role, false), /비밀번호로 로그인/);
+    assert.doesNotMatch(renderSignup(null, {}, false, role), /비밀번호로 로그인/);
   }
 });

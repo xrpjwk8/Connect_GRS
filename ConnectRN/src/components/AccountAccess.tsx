@@ -34,6 +34,8 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
   const goBack = useNativeBack(busy);
   const busyRef = useRef(false);
   const [error, setError] = useState('');
+  const [passwordMode, setPasswordMode] = useState(false);
+  const [password, setPassword] = useState('');
   const normalized = email.trim().toLowerCase();
   const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized);
   useEffect(() => {
@@ -61,6 +63,12 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
     const { error } = await supabase.auth.verifyOtp({ email: sentTo, token: code, type: 'email' });
     if (error) throw error;
     // Auth state listener loads the server profile; local form values never grant access.
+  });
+  const loginWithPassword = () => run(async () => {
+    if (!emailValid || !password) throw new Error('이메일과 비밀번호를 입력해주세요.');
+    const { error } = await supabase.auth.signInWithPassword({ email: normalized, password });
+    if (error) throw error;
+    setPassword('');
   });
   const profileComplete = !!name.trim() && (role !== 'booker' || !!(school.trim() && department.trim() && position.trim()));
   const complete = () => run(async () => {
@@ -107,6 +115,16 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
           <AgreementSection onRequiredAgreedChange={setAgreed} appRole={role} />
           <LimeButton title={busy ? '처리 중…' : role === 'booker' ? '가입 완료하고 학생증 제출하기' : '가입 완료하기'} onPress={complete} appRole={role} disabled={busy || !agreed || !profileComplete} />
           <GhostButton title="다른 계정으로 인증" onPress={logout} appRole={role} disabled={busy} />
+        </> : !signup && passwordMode ? <>
+          <Text style={T.bodyLG}>비밀번호가 설정된 계정으로 로그인해주세요.</Text>
+          {emailField}
+          <View style={{ gap: 8 }}><FormLabel title="비밀번호" required appRole={role} />
+            <AppTextField appRole={role} accessibilityLabel="비밀번호 필수" value={password} onChangeText={setPassword}
+              placeholder="비밀번호" secureTextEntry autoCapitalize="none" autoCorrect={false} textContentType="password" editable={!busy} />
+          </View>
+          <LimeButton title="로그인" loading={actionBusy} onPress={loginWithPassword} disabled={busy || !emailValid || !password} appRole={role} />
+          <GhostButton title="이메일 인증번호로 로그인" disabled={busy} appRole={role}
+            onPress={() => { setPasswordMode(false); setPassword(''); setError(''); }} />
         </> : <>
           <Text style={T.bodyLG}>이메일로 인증번호를 받은 뒤 아래에 입력해주세요.{role === 'booker' ? ' 학교 메일이 아니어도 가입할 수 있으며, 예약은 학생증 승인 후 이용할 수 있습니다.' : ''}</Text>
           {!signup && emailField}
@@ -117,6 +135,8 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
               onChangeText={v => setCode(v.replace(/\D/g, '').slice(0, 10))} />
           </View>
           <LimeButton title="인증하고 계속" onPress={verify} disabled={busy || !sentTo || !/^\d{6,10}$/.test(code)} appRole={role} />
+          {!signup && <GhostButton title="비밀번호로 로그인" disabled={busy} appRole={role}
+            onPress={() => { setPasswordMode(true); setCode(''); setError(''); }} />}
         </>}
         {__DEV__ && signup && !session && useEmailAuth && <GhostButton title="테스트 미리보기로 돌아가기" appRole={role} disabled={busy} onPress={() => setUseEmailAuth(false)} />}
         {error ? <Text accessibilityRole="alert" style={[T.bodyLG, { color: AppColors.danger }]}>{error}</Text> : null}

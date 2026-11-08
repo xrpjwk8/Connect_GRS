@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "3",
+      "buildNumber": "4",
       "bundleIdentifier": "com.xrpjwk8.ConnectRN",
       "appleTeamId": "7C2363N8Z6",
       "config": {
