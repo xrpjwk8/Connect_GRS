@@ -13,9 +13,9 @@ const compiled = ts.transpileModule(source, { compilerOptions: {
   jsx: ts.JsxEmit.React, esModuleInterop: true,
 } }).outputText;
 
-function renderSignup(session, values = {}) {
+function renderSignup(session, values = {}, development = true) {
   let stateIndex = 0;
-  const stateNames = ["useEmailAuth", "email", "code", "sentTo", "cooldown", "name", "school", "department", "position", "agreed"];
+  const stateNames = ["useEmailAuth", "email", "code", "sentTo", "cooldown", "name", "school", "department", "position", "agreed", "actionBusy", "error"];
   const box = ({ children }) => React.createElement('div', null, children);
   const button = ({ title, disabled }) => React.createElement('button', { disabled }, title);
   const dependencies = {
@@ -34,7 +34,7 @@ function renderSignup(session, values = {}) {
     './AgreementSection': { __esModule: true, default: () => '필수 약관' },
     '../theme/colors': { AppColors: {} },
   };
-  const sandbox = { exports: {}, __DEV__: true, require: name => {
+  const sandbox = { exports: {}, __DEV__: development, require: name => {
     assert.ok(name in dependencies, `Unexpected dependency: ${name}`);
     return dependencies[name];
   } };
@@ -52,7 +52,7 @@ test('verified user remount resumes profile completion, never development previe
 test('unauthenticated development signup still offers blank preview and real authentication separately', () => {
   const html = renderSignup(null);
   assert.match(html, /입력 없이 테스트 미리보기/);
-  assert.match(html, /이메일 인증하기 \(실제 가입\)/);
+  assert.match(html, /이메일 인증하기/);
   assert.doesNotMatch(html, /이메일 인증 완료|가입 완료하고 학생증 제출하기/);
 });
 
@@ -68,4 +68,19 @@ test('booker completion requires group and position while preview remains availa
   for (const label of ['이름', '학교명', '학과 / 집단명', '직책', '이메일']) assert.ok(preview.includes(label + '*'));
   assert.doesNotMatch(preview, /\(필수\)|\(선택\)/);
   assert.equal((preview.match(/placeholder="[^"]+"/g) || []).length, 5);
+});
+
+test('authentication request keeps continue disabled with its normal label', () => {
+  const html = renderSignup(null, { useEmailAuth: true, actionBusy: true, email: 'booker@example.com', sentTo: 'booker@example.com', code: '123456' });
+  assert.match(html, /<button disabled="">인증하고 계속<\/button>/);
+  assert.doesNotMatch(html, /처리 중/);
+});
+
+test('release signup never exposes development preview or its return button', () => {
+  for (const useEmailAuth of [true, false]) {
+    const html = renderSignup(null, { useEmailAuth }, false);
+    assert.doesNotMatch(html, /테스트 미리보기|개발용|실제 가입/);
+    assert.match(html, /인증번호 요청/);
+    assert.match(html, /인증하고 계속/);
+  }
 });

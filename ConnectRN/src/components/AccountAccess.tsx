@@ -86,7 +86,7 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
           {role === 'booker' && <>{field('학교명', school, setSchool, '예: 연세대학교')}{field('학과 / 집단명', department, setDepartment, '예: 경영학과 학생회, 중앙동아리')}{field('직책', position, setPosition, '예: 회장, 총무, 동아리원')}</>}
           {!session && emailField}
           {previewSignup && <View style={{ gap: 12 }}>
-            <LimeButton title="이메일 인증하기 (실제 가입)" appRole={role} disabled={busy} onPress={() => setUseEmailAuth(true)} />
+            <LimeButton title="이메일 인증하기" appRole={role} disabled={busy} onPress={() => setUseEmailAuth(true)} />
             <Text style={T.bodyMD}>{role === 'booker' ? '이메일 인증과 가입 정보 확인 후 학생증을 제출할 수 있어요. 예약은 학생증 승인 후 이용할 수 있습니다.' : '이메일 인증과 가입 정보 확인 후 매장을 등록하고 예약을 관리할 수 있어요.'}</Text>
           </View>}
         </>}
@@ -111,7 +111,7 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
             <AppTextField appRole={role} value={code} placeholder="메일에 표시된 인증번호" keyboardType="number-pad" editable={!busy}
               onChangeText={v => setCode(v.replace(/\D/g, '').slice(0, 10))} />
           </View>
-          <LimeButton title={busy ? '처리 중…' : '인증하고 계속'} onPress={verify} disabled={busy || !sentTo || !/^\d{6,10}$/.test(code)} appRole={role} />
+          <LimeButton title="인증하고 계속" onPress={verify} disabled={busy || !sentTo || !/^\d{6,10}$/.test(code)} appRole={role} />
         </>}
         {__DEV__ && signup && !session && useEmailAuth && <GhostButton title="테스트 미리보기로 돌아가기" appRole={role} disabled={busy} onPress={() => setUseEmailAuth(false)} />}
         {error ? <Text accessibilityRole="alert" style={[T.bodyLG, { color: AppColors.danger }]}>{error}</Text> : null}
