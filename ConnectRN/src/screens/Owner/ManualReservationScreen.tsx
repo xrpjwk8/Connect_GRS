@@ -1,3 +1,4 @@
+import BackButton from '../../components/BackButton';
 import useNativeBack from '../../navigation/useNativeBack';
 import { rpc } from '../../services/backend';
 import { useServerAction, useRefreshOnFocus } from '../../hooks/useServer';
@@ -99,11 +100,9 @@ export default function ManualReservationScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
-        <Pressable accessibilityRole="button" accessibilityLabel="뒤로가기" onPress={goBack} hitSlop={12}>
-          <Ionicons name="chevron-back" size={18} color={AppColors.ink} />
-        </Pressable>
+        <BackButton onPress={goBack} />
         <Text style={styles.topBarTitle}>새 예약 등록</Text>
-        <View style={{ width: 18 }} />
+        <View style={{ width: 44 }} />
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

@@ -1,3 +1,4 @@
+import BackButton from '../../components/BackButton';
 import StorePhoto from '../../components/StorePhoto';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -22,11 +23,9 @@ export default function FavoritesScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.titleBar}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={22} color={AppColors.ink} />
-        </Pressable>
+        <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.titleText}>찜한 가게</Text>
-        <View style={{ width: 22 }} />
+        <View style={{ width: 44 }} />
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <DataStatus /><View style={styles.infoRow}>
@@ -81,7 +80,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: AppSpacing.s18,
     paddingVertical: AppSpacing.s12,
   },
-  backButton: { width: 22 },
   titleText: { ...Typography.titleMD, color: AppColors.ink },
   scrollContent: { paddingHorizontal: AppSpacing.s18, paddingVertical: AppSpacing.s18, gap: AppSpacing.s14 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: AppSpacing.s8, paddingVertical: AppSpacing.s6 },

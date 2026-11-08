@@ -1,3 +1,4 @@
+import BackButton from '../../components/BackButton';
 import React, { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -48,9 +49,7 @@ export default function SearchFilterScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
-          <Ionicons name="close" size={20} color={AppColors.ink} />
-        </Pressable>
+        <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.topBarTitle} pointerEvents="none">
           검색 조건
         </Text>

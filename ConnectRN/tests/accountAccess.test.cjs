@@ -86,15 +86,18 @@ test('release signup never exposes development preview or its return button', ()
 });
 
 
-test('both signup roles show progress throughout request and resend cooldown', () => {
+test('both roles show loading only during OTP request, not cooldown, in login and signup', () => {
   for (const role of ['booker', 'owner']) {
-    for (const values of [{ requestingCode: true, actionBusy: true }, { cooldown: 42 }]) {
-      const html = renderSignup(null, { email: 'test@example.com', ...values }, false, role);
-      assert.match(html, /<button disabled="" aria-busy="true">(인증번호 요청 중…|42초 후 재요청)<\/button>/);
+    for (const signup of [false, true]) {
+      const render = values => renderSignup(null, { email: 'test@example.com', ...values }, false, role, signup);
+      assert.match(render({ requestingCode: true, actionBusy: true }), /<button disabled="" aria-busy="true">인증번호 요청 중…<\/button>/);
+      for (const cooldown of [60, 42, 1]) {
+        const html = render({ cooldown });
+        assert.ok(html.includes(`<button disabled="">${cooldown}초 후 재요청</button>`));
+        assert.doesNotMatch(html, /aria-busy="true"/);
+      }
+      assert.match(render({}), /<button>인증번호 요청<\/button>/);
     }
-    const ready = renderSignup(null, { email: 'test@example.com' }, false, role);
-    assert.match(ready, /<button>인증번호 요청<\/button>/);
-    if (role === 'owner') assert.match(ready, /점주 성함/);
   }
 });
 

@@ -1,3 +1,4 @@
+import BackButton from '../../components/BackButton';
 import { showAlert } from '../../utils/alert';
 import useNativeBack from '../../navigation/useNativeBack';
 import React from 'react';
@@ -18,7 +19,7 @@ export default function NotificationReservationScreen() {
   const reservation = myReservations.find(r => r.id === route.params.reservationId);
   const labels: Record<string,string> = { pending: '수락 대기', confirmed: '예약 확정', rejected: '거절', cancelled: '취소', completed: '완료' };
   return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}><ScrollView contentContainerStyle={{ padding: 22, gap: 18 }}>
-    <GhostButton title="뒤로" onPress={goBack} disabled={action.busy} />
+    <BackButton onPress={goBack} disabled={action.busy} />
     <Text style={T.headlineLG}>예약 상세</Text><DataStatus />
     {reservation ? <>
       <Text style={T.titleMD}>{reservation.storeName} · {labels[reservation.status]}</Text>

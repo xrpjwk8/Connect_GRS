@@ -1,3 +1,4 @@
+import BackButton from '../../components/BackButton';
 import { serviceDate, slotSelection, minuteLabel } from '../../utils/reservation';
 import { supabase } from '../../lib/supabase';
 import { rpc } from '../../services/backend';
@@ -131,11 +132,9 @@ export default function ReservationEditScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
-          <Ionicons name="close" size={20} color={AppColors.ink} />
-        </Pressable>
+        <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.topBarTitle}>예약 수정</Text>
-        <View style={{ width: 20 }} />
+        <View style={{ width: 44 }} />
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

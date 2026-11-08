@@ -1,3 +1,4 @@
+import BackButton from '../../components/BackButton';
 import useNativeBack from '../../navigation/useNativeBack';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
@@ -38,7 +39,7 @@ export default function NotificationInboxScreen() {
     finally { setBusy(false); }
   };
   return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}><ScrollView contentContainerStyle={{ padding: 22, gap: 16 }}>
-    <GhostButton title="뒤로" onPress={goBack} />
+    <BackButton onPress={goBack} />
     <Text style={T.headlineLG}>알림</Text>
     <GhostButton title={busy ? '기기 등록 중…' : '예약·채팅 푸시 알림 켜기'} onPress={enable} disabled={busy || isPreview} />
     {Platform.OS !== 'web' && <GhostButton title="기기 알림 설정 열기" onPress={() => { void Linking.openSettings(); }} />}

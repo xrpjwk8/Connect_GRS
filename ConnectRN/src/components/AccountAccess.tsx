@@ -128,7 +128,7 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
         </> : <>
           <Text style={T.bodyLG}>이메일로 인증번호를 받은 뒤 아래에 입력해주세요.{role === 'booker' ? ' 학교 메일이 아니어도 가입할 수 있으며, 예약은 학생증 승인 후 이용할 수 있습니다.' : ''}</Text>
           {!signup && emailField}
-          <LimeButton loading={requestingCode || cooldown > 0} title={requestingCode ? '인증번호 요청 중…' : cooldown ? `${cooldown}초 후 재요청` : '인증번호 요청'} onPress={requestCode} disabled={busy || !emailValid || cooldown > 0} appRole={role} />
+          <LimeButton loading={requestingCode} title={requestingCode ? '인증번호 요청 중…' : cooldown ? `${cooldown}초 후 재요청` : '인증번호 요청'} onPress={requestCode} disabled={busy || !emailValid || cooldown > 0} appRole={role} />
           {sentTo ? <Text style={T.bodyMD}>{sentTo}로 인증 메일을 요청했습니다. 메일함과 스팸함을 확인해주세요.</Text> : null}
           <View style={{ gap: 8 }}><FormLabel title="인증번호" appRole={role} />
             <AppTextField appRole={role} value={code} placeholder="메일에 표시된 인증번호" keyboardType="number-pad" editable={!busy}

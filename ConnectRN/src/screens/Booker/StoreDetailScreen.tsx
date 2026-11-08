@@ -1,3 +1,4 @@
+import BackButton from '../../components/BackButton';
 import StorePhoto from '../../components/StorePhoto';
 import React, { useMemo, useRef, useState } from 'react';
 import {
@@ -124,9 +125,7 @@ export default function StoreDetailScreen() {
         {!canBook && !isPreview && <Text style={{ padding: 18, color: AppColors.primaryDeep }}>{studentRestriction}</Text>}
         <View style={styles.headerImage}>
           <StorePhoto path={store.photoPath} style={StyleSheet.absoluteFill} />
-          <Pressable style={styles.backBadge} onPress={() => navigation.goBack()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={20} color={AppColors.white} />
-          </Pressable>
+          <BackButton onPress={() => navigation.goBack()} overlay style={styles.backBadge} />
           <View style={styles.headerActions}>
             <Pressable style={styles.iconBadge} onPress={toggleFavorite} disabled={action.busy}>
               <Ionicons
@@ -358,14 +357,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: AppSpacing.s10,
   },
-  backBadge: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
-    padding: AppSpacing.s10,
-    borderRadius: AppRadius.pill,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
+  backBadge: { position: 'absolute', top: 14, left: 14 },
   iconBadge: {
     padding: AppSpacing.s10,
     borderRadius: AppRadius.pill,

@@ -1,3 +1,4 @@
+import BackButton from '../../components/BackButton';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,9 +44,7 @@ export default function SearchResultsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={20} color={AppColors.ink} />
-        </Pressable>
+        <BackButton onPress={() => navigation.goBack()} />
         <View style={styles.headerLeft}>
           <Ionicons name="search-outline" size={14} color={AppColors.inkSecondary} />
           <Text style={styles.headerText} numberOfLines={1}>

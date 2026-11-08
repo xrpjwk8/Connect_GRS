@@ -1,3 +1,4 @@
+import BackButton from '../../components/BackButton';
 import useNativeBack from '../../navigation/useNativeBack';
 import React, { useState } from 'react';
 import { ScrollView, Switch, Text, View } from 'react-native';
@@ -5,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAppState, useTypography } from '../../state/AppState';
 import { AppTextField, FormLabel } from '../../components/CommonComponents';
-import { LimeButton, GhostButton } from '../../components/Buttons';
+import { LimeButton } from '../../components/Buttons';
 import { useServerAction } from '../../hooks/useServer';
 import { minuteLabel, timeMinute } from '../../utils/reservation';
 import { rpc } from '../../services/backend';
@@ -38,7 +39,7 @@ export default function StoreInfoEditScreen() {
     }
   }, () => navigation.goBack());
   return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}><ScrollView contentContainerStyle={{ padding: 22, gap: 20 }} keyboardShouldPersistTaps="handled">
-    <GhostButton title="뒤로" onPress={goBack} appRole="owner" />
+    <BackButton onPress={goBack} />
     <Text style={T.headlineLG}>{ownerStoreRow?.name} · 예약 설정</Text>
     <Text style={T.bodyLG}>기존 확정 예약을 수용할 수 있는 범위에서 정원과 영업시간을 변경할 수 있습니다.</Text>
     {([['최대 정원', capacity, setCapacity], ['영업 시작 (예: 17:00)', opening, setOpening], ['영업 종료 (예: 24:30)', closing, setClosing]] as const).map(([label, value, change]) =>

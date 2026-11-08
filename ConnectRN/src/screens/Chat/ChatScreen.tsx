@@ -1,3 +1,4 @@
+import BackButton from '../../components/BackButton';
 import useNativeBack from '../../navigation/useNativeBack';
 import { useChat } from '../../hooks/useChat';
 import { GhostButton } from '../../components/Buttons';
@@ -53,11 +54,9 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={goBack} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={AppColors.ink} />
-        </Pressable>
+        <BackButton onPress={goBack} />
         <Text style={[T.titleMD, { color: AppColors.ink }]}>{peerName}</Text>
-        <View style={{ width: 22 }} />
+        <View style={{ width: 44 }} />
       </View>
 
       {reservation && (

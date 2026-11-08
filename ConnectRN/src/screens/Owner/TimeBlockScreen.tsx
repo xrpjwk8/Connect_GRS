@@ -1,8 +1,8 @@
+import BackButton from '../../components/BackButton';
 import useNativeBack from '../../navigation/useNativeBack';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
@@ -63,11 +63,9 @@ export default function TimeBlockScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
-        <Pressable accessibilityRole="button" accessibilityLabel="뒤로가기" onPress={goBack} hitSlop={12}>
-          <Ionicons name="chevron-back" size={18} color={AppColors.ink} />
-        </Pressable>
+        <BackButton onPress={goBack} />
         <Text style={styles.topBarTitle}>영업 시간표 관리</Text>
-        <View style={{ width: 18 }} />
+        <View style={{ width: 44 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
