@@ -59,7 +59,17 @@ def main():
     expect('student review requires login', request('/rest/v1/rpc/review_student_verification',
            {'p_user_id': str(uuid.uuid4()), 'p_request_id': str(uuid.uuid4()), 'p_approve': True}), 401, code='42501')
     expect('admin invitation requires login', request('/rest/v1/rpc/accept_admin_invitation', {}), 401, code='42501')
-    print('11 hosted API checks passed; authenticated JWT/OTP flows require separate testing.')
+    expect('store photo path is exposed', request('/rest/v1/stores?select=id,photo_path&limit=1'), 200, list)
+    expect('store photo mutation requires login', request('/rest/v1/rpc/set_store_photo',
+           {'p_store_id': str(uuid.uuid4()), 'p_path': None}), 401, code='42501')
+    expect('chat history requires login', request('/rest/v1/chat_messages?select=id&limit=1'), 401, code='42501')
+    expect('notification inbox requires login', request('/rest/v1/notifications?select=id&limit=1'), 401, code='42501')
+    expect('chat sending requires login', request('/rest/v1/rpc/send_chat_message',
+           {'p_reservation_id': str(uuid.uuid4()), 'p_body': 'forbidden probe', 'p_request_id': str(uuid.uuid4())}), 401, code='42501')
+    expect('device registration requires login', request('/rest/v1/rpc/register_push_device',
+           {'p_device_id': str(uuid.uuid4()), 'p_token': 'ExpoPushToken[forbiddenProbe000]', 'p_platform': 'ios'}), 401, code='42501')
+    expect('notification read requires login', request('/rest/v1/rpc/mark_notification_read', {'p_id': str(uuid.uuid4())}), 401, code='42501')
+    print('18 hosted API checks passed; authenticated JWT/OTP flows require separate testing.')
 
 
 if __name__ == '__main__':

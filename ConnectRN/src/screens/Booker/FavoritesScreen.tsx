@@ -1,3 +1,4 @@
+import StorePhoto from '../../components/StorePhoto';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -46,7 +47,7 @@ function FavoriteCard({ store }: { store: Store }) {
   return (
     <Card padding={0} style={styles.card}>
       <View style={styles.cardImageWrap}>
-        <Ionicons name={store.imageName as any} size={36} color="rgba(255,255,255,0.55)" />
+        <StorePhoto path={store.photoPath} style={StyleSheet.absoluteFill} />
         <View style={styles.heartBadge}>
           <Ionicons name="heart" size={16} color={AppColors.primary} />
         </View>

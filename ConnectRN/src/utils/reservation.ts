@@ -26,7 +26,7 @@ export function slotSelection(labels: string[]) {
 }
 export function mapStore(row: StoreRow): Store {
   return { id: row.id, name: row.name, category: row.category, maxCapacity: row.capacity,
-    location: row.region, imageName: 'storefront-outline', keywords: [], isFavorite: false,
+    photoPath: row.photo_path, location: row.region, imageName: 'storefront-outline', keywords: [], isFavorite: false,
     rating: 0, reviewCount: 0, pricePerPerson: 0, acceptanceRate: 0,
     approved: row.approved, openingMinute: row.opening_minute, closingMinute: row.closing_minute,
     allowShared: row.allow_shared, description: row.description, metricsAvailable: false };

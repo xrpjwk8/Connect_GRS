@@ -44,7 +44,13 @@ export default function OwnerDashboardScreen() {
   }, [myReservations, ownerStore?.id]);
 
   const decide = (id: string, decision: 'confirmed' | 'rejected') => {
-    void action.run(() => rpc('decide_reservation', { p_reservation_id: id, p_accept: decision === 'confirmed' }));
+    const submit = () => { void action.run(() => rpc('decide_reservation', { p_reservation_id: id, p_accept: decision === 'confirmed' })); };
+    if (decision === 'rejected') {
+      showAlert('거절하시겠습니까?', '예약자에게 거절 알림이 전송됩니다.', [
+        { text: '취소', style: 'cancel' },
+        { text: '거절', style: 'destructive', onPress: submit },
+      ]);
+    } else submit();
   };
 
   return (

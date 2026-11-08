@@ -14,7 +14,7 @@ import type { SearchFilter } from '../../models/types';
 
 export default function BookerHomeScreen() {
   const navigation = useNavigation<any>();
-  const { schoolName, setLastSearchFilter, setSelectedSearchDate } = useAppState();
+  const { schoolName, setLastSearchFilter, setSelectedSearchDate, isPreview } = useAppState();
   const [selectedCategory, setSelectedCategory] = useState('전체');
 
   const locationLabel = schoolName.trim() ? `신촌 · ${schoolName.trim()}` : '신촌';
@@ -33,6 +33,9 @@ export default function BookerHomeScreen() {
           <Text style={styles.headerLocation}>{locationLabel}</Text>
         </View>
         <View style={styles.headerRight}>
+          {!isPreview && <Pressable accessibilityRole="button" accessibilityLabel="예약·채팅 알림" hitSlop={12} onPress={() => navigation.navigate('NotificationInbox')}>
+            <Ionicons name="notifications-outline" size={20} color={AppColors.ink} />
+          </Pressable>}
           <Pressable style={styles.favoritesButton} onPress={() => navigation.navigate('Favorites')}>
             <Ionicons name="heart-outline" size={14} color={AppColors.ink} />
             <Text style={styles.favoritesButtonText}>찜목록</Text>

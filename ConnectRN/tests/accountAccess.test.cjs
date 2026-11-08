@@ -13,17 +13,20 @@ const compiled = ts.transpileModule(source, { compilerOptions: {
   jsx: ts.JsxEmit.React, esModuleInterop: true,
 } }).outputText;
 
-function renderSignup(session) {
+function renderSignup(session, values = {}, development = true, role = 'booker') {
+  let stateIndex = 0;
+  const stateNames = ["useEmailAuth", "email", "code", "sentTo", "cooldown", "requestingCode", "name", "school", "department", "position", "agreed", "actionBusy", "error"];
   const box = ({ children }) => React.createElement('div', null, children);
-  const button = ({ title, disabled }) => React.createElement('button', { disabled }, title);
+  const button = ({ title, disabled, loading }) => React.createElement('button', { disabled, ...(loading ? { 'aria-busy': true } : {}) }, title);
   const dependencies = {
-    react: React,
+    '../navigation/useNativeBack': { __esModule: true, default: () => () => {} },
+    react: { ...React, useState(initial) { const key = stateNames[stateIndex++]; return React.useState(key in values ? values[key] : initial); } },
     'react-native': { KeyboardAvoidingView: box, ScrollView: box, Text: box, View: box, Platform: { OS: 'web' } },
     'react-native-safe-area-context': { SafeAreaView: box },
     '../state/AppState': { useAppState: () => ({ session, ready: true }), useTypography: () => ({}) },
     '../lib/supabase': { supabase: {} },
     '../services/backend': {},
-    './CommonComponents': { AppTextField: () => React.createElement('input'), FormLabel: ({ title }) => title },
+    './CommonComponents': { AppTextField: ({ placeholder }) => React.createElement('input', { placeholder }), FormLabel: ({ title, required }) => title + (required ? '*' : '') },
     './ScreenHeader': { __esModule: true, default: ({ title }) => title },
     '../theme/spacing': { AppSpacing: {} },
     '../theme/radius': { AppRadius: {} },
@@ -31,12 +34,12 @@ function renderSignup(session) {
     './AgreementSection': { __esModule: true, default: () => '필수 약관' },
     '../theme/colors': { AppColors: {} },
   };
-  const sandbox = { exports: {}, __DEV__: true, require: name => {
+  const sandbox = { exports: {}, __DEV__: development, require: name => {
     assert.ok(name in dependencies, `Unexpected dependency: ${name}`);
     return dependencies[name];
   } };
   vm.runInNewContext(compiled, sandbox);
-  return renderToStaticMarkup(React.createElement(sandbox.exports.default, { role: 'booker', signup: true }));
+  return renderToStaticMarkup(React.createElement(sandbox.exports.default, { role, signup: true }));
 }
 
 test('verified user remount resumes profile completion, never development preview', () => {
@@ -49,6 +52,48 @@ test('verified user remount resumes profile completion, never development previe
 test('unauthenticated development signup still offers blank preview and real authentication separately', () => {
   const html = renderSignup(null);
   assert.match(html, /입력 없이 테스트 미리보기/);
-  assert.match(html, /이메일 인증하기 \(실제 가입\)/);
+  assert.match(html, /이메일 인증하기/);
   assert.doesNotMatch(html, /이메일 인증 완료|가입 완료하고 학생증 제출하기/);
+});
+
+test('booker completion requires group and position while preview remains available', () => {
+  const session = { user: { email: 'booker@example.com' } };
+  const complete = { name: '홍길동', school: '연세대학교', department: '학생회', position: '총무', agreed: true };
+  for (const field of ['name', 'school', 'department', 'position']) {
+    assert.match(renderSignup(session, { ...complete, [field]: '   ' }), /<button disabled="">가입 완료하고 학생증 제출하기/);
+  }
+  assert.match(renderSignup(session, complete), /<button>가입 완료하고 학생증 제출하기/);
+  const preview = renderSignup(null);
+  assert.match(preview, /<button>입력 없이 테스트 미리보기/);
+  for (const label of ['이름', '학교명', '학과 / 집단명', '직책', '이메일']) assert.ok(preview.includes(label + '*'));
+  assert.doesNotMatch(preview, /\(필수\)|\(선택\)/);
+  assert.equal((preview.match(/placeholder="[^"]+"/g) || []).length, 5);
+});
+
+test('authentication request keeps continue disabled with its normal label', () => {
+  const html = renderSignup(null, { useEmailAuth: true, actionBusy: true, email: 'booker@example.com', sentTo: 'booker@example.com', code: '123456' });
+  assert.match(html, /<button disabled="">인증하고 계속<\/button>/);
+  assert.doesNotMatch(html, /처리 중/);
+});
+
+test('release signup never exposes development preview or its return button', () => {
+  for (const useEmailAuth of [true, false]) {
+    const html = renderSignup(null, { useEmailAuth }, false);
+    assert.doesNotMatch(html, /테스트 미리보기|개발용|실제 가입/);
+    assert.match(html, /인증번호 요청/);
+    assert.match(html, /인증하고 계속/);
+  }
+});
+
+
+test('both signup roles show progress throughout request and resend cooldown', () => {
+  for (const role of ['booker', 'owner']) {
+    for (const values of [{ requestingCode: true, actionBusy: true }, { cooldown: 42 }]) {
+      const html = renderSignup(null, { email: 'test@example.com', ...values }, false, role);
+      assert.match(html, /<button disabled="" aria-busy="true">(인증번호 요청 중…|42초 후 재요청)<\/button>/);
+    }
+    const ready = renderSignup(null, { email: 'test@example.com' }, false, role);
+    assert.match(ready, /<button>인증번호 요청<\/button>/);
+    if (role === 'owner') assert.match(ready, /점주 성함/);
+  }
 });

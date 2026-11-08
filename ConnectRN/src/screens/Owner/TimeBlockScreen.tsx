@@ -1,3 +1,4 @@
+import useNativeBack from '../../navigation/useNativeBack';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,6 +28,7 @@ function buildWeekDays(start: Date): Date[] {
 }
 
 export default function TimeBlockScreen() {
+  const goBack = useNativeBack();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { myReservations, capacityOverbookingEnabled, blockedSlotsByDate, ownerStore } = useAppState();
@@ -61,7 +63,7 @@ export default function TimeBlockScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel="뒤로가기" onPress={goBack} hitSlop={12}>
           <Ionicons name="chevron-back" size={18} color={AppColors.ink} />
         </Pressable>
         <Text style={styles.topBarTitle}>영업 시간표 관리</Text>
@@ -127,7 +129,7 @@ export default function TimeBlockScreen() {
         </View>
       </ScrollView>
 
-      <Pressable style={styles.saveButton} onPress={() => navigation.goBack()}>
+      <Pressable style={styles.saveButton} onPress={goBack}>
         <Text style={styles.saveButtonText}>닫기</Text>
       </Pressable>
     </SafeAreaView>

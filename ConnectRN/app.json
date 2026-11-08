@@ -8,6 +8,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "1",
       "bundleIdentifier": "com.xrpjwk8.ConnectRN",
       "appleTeamId": "7C2363N8Z6"
     },
@@ -18,7 +19,9 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.xrpjwk8.connectrn",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,7 +35,14 @@
             "enableSceneSupport": true
           }
         }
-      ]
-    ]
+      ],
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2fa26408-1e64-49bd-a852-bccceca4c268"
+      }
+    },
+    "owner": "xrpjwk8"
   }
 }

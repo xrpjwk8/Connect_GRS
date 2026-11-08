@@ -9,7 +9,7 @@ import { AppColors } from '../../theme/colors';
 import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { useAppState, useTypography } from '../../state/AppState';
-import { PrimaryFilledButton } from '../../components/Buttons';
+import { GhostButton, PrimaryFilledButton } from '../../components/Buttons';
 import Card from '../../components/Card';
 import { dateKey, isSameDay } from '../../utils/date';
 import type { MyReservation } from '../../models/types';
@@ -201,6 +201,8 @@ export default function ReservationCalendarScreen() {
 }
 
 function OwnerReservationCard({ r, styles }: { r: MyReservation; styles: ReturnType<typeof makeStyles> }) {
+  const navigation = useNavigation<any>();
+  const { isPreview } = useAppState();
   const confirmed = r.status === 'confirmed';
   return (
     <Card padding={14} style={{ gap: 10 }}>
@@ -231,6 +233,7 @@ function OwnerReservationCard({ r, styles }: { r: MyReservation; styles: ReturnT
           <Text style={styles.reservationMetaText}>{r.people}명</Text>
         </View>
       </View>
+      {!isPreview && <GhostButton title="예약 상세 보기" appRole="owner" onPress={() => navigation.navigate('NotificationReservation', { reservationId: r.id })} />}
     </Card>
   );
 }

@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          request_id: string
+          reservation_id: string
+          sender_id: string
+          sender_role: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          request_id: string
+          reservation_id: string
+          sender_id: string
+          sender_role: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          request_id?: string
+          reservation_id?: string
+          sender_id?: string
+          sender_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           store_id: string
@@ -37,6 +82,54 @@ export type Database = {
           },
           {
             foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          read_at: string | null
+          reservation_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          kind: string
+          read_at?: string | null
+          reservation_id: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          read_at?: string | null
+          reservation_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -219,6 +312,7 @@ export type Database = {
           name: string
           opening_minute: number
           owner_id: string
+          photo_path: string | null
           region: string
         }
         Insert: {
@@ -233,6 +327,7 @@ export type Database = {
           name: string
           opening_minute?: number
           owner_id: string
+          photo_path?: string | null
           region: string
         }
         Update: {
@@ -247,6 +342,7 @@ export type Database = {
           name?: string
           opening_minute?: number
           owner_id?: string
+          photo_path?: string | null
           region?: string
         }
         Relationships: [
@@ -402,6 +498,7 @@ export type Database = {
           name: string
           opening_minute: number
           owner_id: string
+          photo_path: string | null
           region: string
         }
         SetofOptions: {
@@ -641,6 +738,11 @@ export type Database = {
           start_minute: number
         }[]
       }
+      mark_notification_read: { Args: { p_id: string }; Returns: undefined }
+      register_push_device: {
+        Args: { p_device_id: string; p_platform: string; p_token: string }
+        Returns: undefined
+      }
       register_store: {
         Args: {
           p_capacity: number
@@ -660,6 +762,7 @@ export type Database = {
           name: string
           opening_minute: number
           owner_id: string
+          photo_path: string | null
           region: string
         }
         SetofOptions: {
@@ -767,6 +870,7 @@ export type Database = {
           name: string
           opening_minute: number
           owner_id: string
+          photo_path: string | null
           region: string
         }[]
         SetofOptions: {
@@ -775,6 +879,29 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      send_chat_message: {
+        Args: { p_body: string; p_request_id: string; p_reservation_id: string }
+        Returns: {
+          body: string
+          created_at: string
+          id: string
+          request_id: string
+          reservation_id: string
+          sender_id: string
+          sender_role: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      // SQL NULL removes the photo; an empty previous photo also returns NULL.
+      set_store_photo: {
+        Args: { p_path: string | null; p_store_id: string }
+        Returns: string | null
       }
       submit_student_verification: {
         Args: { p_request_id: string }
@@ -799,6 +926,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      unregister_push_device: {
+        Args: { p_device_id: string }
+        Returns: undefined
+      }
       update_store_capacity: {
         Args: {
           p_allow_shared: boolean
@@ -819,6 +950,7 @@ export type Database = {
           name: string
           opening_minute: number
           owner_id: string
+          photo_path: string | null
           region: string
         }
         SetofOptions: {
