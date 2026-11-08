@@ -13,17 +13,19 @@ const compiled = ts.transpileModule(source, { compilerOptions: {
   jsx: ts.JsxEmit.React, esModuleInterop: true,
 } }).outputText;
 
-function renderSignup(session) {
+function renderSignup(session, values = {}) {
+  let stateIndex = 0;
+  const stateNames = ["useEmailAuth", "email", "code", "sentTo", "cooldown", "name", "school", "department", "position", "agreed"];
   const box = ({ children }) => React.createElement('div', null, children);
   const button = ({ title, disabled }) => React.createElement('button', { disabled }, title);
   const dependencies = {
-    react: React,
+    react: { ...React, useState(initial) { const key = stateNames[stateIndex++]; return React.useState(key in values ? values[key] : initial); } },
     'react-native': { KeyboardAvoidingView: box, ScrollView: box, Text: box, View: box, Platform: { OS: 'web' } },
     'react-native-safe-area-context': { SafeAreaView: box },
     '../state/AppState': { useAppState: () => ({ session, ready: true }), useTypography: () => ({}) },
     '../lib/supabase': { supabase: {} },
     '../services/backend': {},
-    './CommonComponents': { AppTextField: () => React.createElement('input'), FormLabel: ({ title }) => title },
+    './CommonComponents': { AppTextField: ({ placeholder }) => React.createElement('input', { placeholder }), FormLabel: ({ title, required }) => title + (required ? '*' : '') },
     './ScreenHeader': { __esModule: true, default: ({ title }) => title },
     '../theme/spacing': { AppSpacing: {} },
     '../theme/radius': { AppRadius: {} },
@@ -51,4 +53,18 @@ test('unauthenticated development signup still offers blank preview and real aut
   assert.match(html, /입력 없이 테스트 미리보기/);
   assert.match(html, /이메일 인증하기 \(실제 가입\)/);
   assert.doesNotMatch(html, /이메일 인증 완료|가입 완료하고 학생증 제출하기/);
+});
+
+test('booker completion requires group and position while preview remains available', () => {
+  const session = { user: { email: 'booker@example.com' } };
+  const complete = { name: '홍길동', school: '연세대학교', department: '학생회', position: '총무', agreed: true };
+  for (const field of ['name', 'school', 'department', 'position']) {
+    assert.match(renderSignup(session, { ...complete, [field]: '   ' }), /<button disabled="">가입 완료하고 학생증 제출하기/);
+  }
+  assert.match(renderSignup(session, complete), /<button>가입 완료하고 학생증 제출하기/);
+  const preview = renderSignup(null);
+  assert.match(preview, /<button>입력 없이 테스트 미리보기/);
+  for (const label of ['이름', '학교명', '학과 / 집단명', '직책', '이메일']) assert.ok(preview.includes(label + '*'));
+  assert.doesNotMatch(preview, /\(필수\)|\(선택\)/);
+  assert.equal((preview.match(/placeholder="[^"]+"/g) || []).length, 5);
 });

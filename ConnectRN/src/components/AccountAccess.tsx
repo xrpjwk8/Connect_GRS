@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppState, useTypography } from '../state/AppState';
 import type { UserRole } from '../models/types';
@@ -56,32 +56,32 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
     if (error) throw error;
     // Auth state listener loads the server profile; local form values never grant access.
   });
+  const profileComplete = !!name.trim() && (role !== 'booker' || !!(school.trim() && department.trim() && position.trim()));
   const complete = () => run(async () => {
-    if (!agreed || !name.trim() || (role === 'booker' && !school.trim())) throw new Error('기본 정보와 필수 약관을 확인해주세요.');
+    if (!agreed || !profileComplete) throw new Error('기본 정보와 필수 약관을 확인해주세요.');
     await rpc('complete_profile', { p_role: role, p_real_name: name.trim(), p_school_name: school.trim(),
       p_department_name: department.trim(), p_position: position.trim() });
     if (role === 'booker') setStudentVerificationOnEntry(true);
     await refresh();
   });
-  const field = (label: string, value: string, change: (value: string) => void) => (
-    <View style={{ gap: 8 }}><FormLabel title={label} appRole={role} />
-      <AppTextField value={value} onChangeText={change} editable={!busy} appRole={role} /></View>
+  const field = (label: string, value: string, change: (value: string) => void, placeholder: string) => (
+    <View style={{ gap: 8 }}><FormLabel title={label} required appRole={role} />
+      <AppTextField accessibilityLabel={`${label} 필수`} placeholder={placeholder} value={value} onChangeText={change} editable={!busy} appRole={role} /></View>
   );
-  const emailField = <View style={{ gap: 8 }}><FormLabel title="이메일" appRole={role} />
-    <AppTextField appRole={role} value={email} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" editable={!busy}
+  const emailField = <View style={{ gap: 8 }}><FormLabel title="이메일" required appRole={role} />
+    <AppTextField appRole={role} accessibilityLabel="이메일 필수" value={email} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" editable={!busy}
       placeholder="name@example.com"
       onChangeText={v => { setEmail(v); setSentTo(''); setCode(''); }} />
   </View>;
   return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}>
     <ScreenHeader title={`${role === 'booker' ? '예약자' : '점주'} ${session ? '가입 정보 확인' : signup ? '회원가입' : '로그인'}`} onBack={cancelSignUp} disabled={busy} appRole={role} />
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={{ padding: AppSpacing.s24, paddingTop: AppSpacing.s8, gap: AppSpacing.s20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+      <ScrollView automaticallyAdjustKeyboardInsets style={{ flex: 1 }} contentContainerStyle={{ padding: AppSpacing.s24, paddingTop: AppSpacing.s8, gap: AppSpacing.s20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
         {!ready ? <Text style={T.bodyLG}>인증된 계정을 확인하고 있습니다…</Text> : session ? <Text style={T.bodyLG}>{session.user.email} 이메일 인증 완료. 기본 정보와 필수 약관을 확인하면 {role === 'booker' ? '학생증 제출로 이어집니다.' : '가입이 완료됩니다.'}</Text> : null}
         {isAdmin && <GhostButton title="관리자 학생증 심사" appRole={role} onPress={() => setAdminPanelOpen(true)} />}
         {(signup || session) && <>
           <Text style={T.bodyLG}>기본 정보</Text>
-          {field('이름 (필수)', name, setName)}
-          {role === 'booker' && <>{field('학교명 (필수)', school, setSchool)}{field('학과 / 단체명 (선택)', department, setDepartment)}{field('직책 (선택)', position, setPosition)}</>}
+          {field('이름', name, setName, role === 'booker' ? '학생증에 기재된 이름을 입력해주세요' : '이름을 입력해주세요')}
+          {role === 'booker' && <>{field('학교명', school, setSchool, '예: 연세대학교')}{field('학과 / 집단명', department, setDepartment, '예: 경영학과 학생회, 중앙동아리')}{field('직책', position, setPosition, '예: 회장, 총무, 동아리원')}</>}
           {!session && emailField}
           {previewSignup && <View style={{ gap: 12 }}>
             <LimeButton title="이메일 인증하기 (실제 가입)" appRole={role} disabled={busy} onPress={() => setUseEmailAuth(true)} />
@@ -98,7 +98,7 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
           </View>
         </> : session ? <>
           <AgreementSection onRequiredAgreedChange={setAgreed} appRole={role} />
-          <LimeButton title={busy ? '처리 중…' : role === 'booker' ? '가입 완료하고 학생증 제출하기' : '가입 완료하기'} onPress={complete} appRole={role} disabled={busy || !agreed || !name.trim() || (role === 'booker' && !school.trim())} />
+          <LimeButton title={busy ? '처리 중…' : role === 'booker' ? '가입 완료하고 학생증 제출하기' : '가입 완료하기'} onPress={complete} appRole={role} disabled={busy || !agreed || !profileComplete} />
           <GhostButton title="다른 계정으로 인증" onPress={logout} appRole={role} disabled={busy} />
         </> : <>
           <Text style={T.bodyLG}>이메일로 인증번호를 받은 뒤 아래에 입력해주세요.{role === 'booker' ? ' 학교 메일이 아니어도 가입할 수 있으며, 예약은 학생증 승인 후 이용할 수 있습니다.' : ''}</Text>
@@ -114,6 +114,5 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
         {__DEV__ && signup && !session && useEmailAuth && <GhostButton title="테스트 미리보기로 돌아가기" appRole={role} disabled={busy} onPress={() => setUseEmailAuth(false)} />}
         {error ? <Text accessibilityRole="alert" style={[T.bodyLG, { color: AppColors.danger }]}>{error}</Text> : null}
       </ScrollView>
-    </KeyboardAvoidingView>
   </SafeAreaView>;
 }

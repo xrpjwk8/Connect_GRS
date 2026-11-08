@@ -15,17 +15,17 @@ export default function RoleSelectionScreen() {
         <Text style={styles.title}>Connect</Text>
         <Text style={styles.subtitle}>어떤 역할로 시작할까요?</Text>
 
-        <LimeButton title="예약자로 시작하기" onPress={goToBookerSignUp} />
-        <GhostButton title="점주로 시작하기" onPress={goToOwnerSignUp} />
+        <LimeButton title="예약자 로그인" onPress={goToBookerLogin} />
+        <GhostButton title="점주 로그인" onPress={goToOwnerLogin} />
 
         <View style={styles.loginRow}>
-          <Text style={styles.loginRowText}>이미 계정이 있으신가요?</Text>
-          <Pressable onPress={goToBookerLogin} hitSlop={6}>
-            <Text style={styles.loginLink}>예약자 로그인</Text>
+          <Text style={styles.loginRowText}>아직 계정이 없으신가요?</Text>
+          <Pressable onPress={goToBookerSignUp} hitSlop={6}>
+            <Text style={styles.loginLink}>예약자 가입</Text>
           </Pressable>
           <Text style={styles.loginRowText}>·</Text>
-          <Pressable onPress={goToOwnerLogin} hitSlop={6}>
-            <Text style={styles.loginLink}>점주 로그인</Text>
+          <Pressable onPress={goToOwnerSignUp} hitSlop={6}>
+            <Text style={styles.loginLink}>점주 가입</Text>
           </Pressable>
         </View>
       </View>

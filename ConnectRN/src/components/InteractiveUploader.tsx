@@ -7,6 +7,9 @@ import { AppColors } from '../theme/colors';
 import { AppRadius } from '../theme/radius';
 import { AppSpacing } from '../theme/spacing';
 import { type AppRole } from '../theme/typography';
+import { prepareUpload } from '../utils/prepareUpload';
+import { showAlert } from '../utils/alert';
+import { errorMessage } from '../services/backend';
 import { useTypography } from '../state/AppState';
 
 interface InteractiveUploaderProps {
@@ -29,16 +32,27 @@ export default function InteractiveUploader({
   const T = useTypography(appRole);
   const [pickedLabel, setPickedLabel] = useState<string | null>(null);
 
+  const [busy, setBusy] = useState(false);
+  const prepare = async (asset: { uri: string; name: string }) => {
+    setBusy(true);
+    try {
+      const file = await prepareUpload(asset);
+      setPickedLabel(file.name);
+      onPicked?.(file.uri, file.name);
+    } catch (e) { showAlert('파일 준비 실패', errorMessage(e)); }
+    finally { setBusy(false); }
+  };
+
   const pickPhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
+      quality: 1,
     });
     if (!result.canceled && result.assets[0]) {
-      setPickedLabel('사진 업로드 완료');
-      onPicked?.(result.assets[0].uri, '사진 업로드 완료');
+      const asset = result.assets[0];
+      await prepare({ uri: asset.uri, name: asset.fileName ?? 'photo.jpg' });
     }
   };
 
@@ -49,8 +63,7 @@ export default function InteractiveUploader({
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      setPickedLabel(asset.name);
-      onPicked?.(asset.uri, asset.name);
+      await prepare(asset);
     }
   };
 
@@ -77,7 +90,7 @@ export default function InteractiveUploader({
   };
 
   return (
-    <Pressable style={styles.container} onPress={handlePress}>
+    <Pressable style={styles.container} onPress={handlePress} disabled={busy}>
       <Ionicons
         name={pickedLabel === null ? icon : 'checkmark-circle'}
         size={28}
@@ -90,7 +103,7 @@ export default function InteractiveUploader({
           { color: pickedLabel === null ? AppColors.primaryDeep : AppColors.ink },
         ]}
       >
-        {pickedLabel ?? title}
+        {busy ? '파일 준비 중…' : pickedLabel ?? title}
       </Text>
       <Text style={[T.bodyMD, styles.subtitle]}>
         {pickedLabel === null ? subtitle : '다시 누르면 변경할 수 있어요'}
