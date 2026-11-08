@@ -4,20 +4,21 @@
     "slug": "ConnectRN",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Connect_logo2.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "1",
+      "buildNumber": "3",
       "bundleIdentifier": "com.xrpjwk8.ConnectRN",
-      "appleTeamId": "7C2363N8Z6"
+      "appleTeamId": "7C2363N8Z6",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#D6FF3D",
+        "foregroundImage": "./assets/Connect_logo2.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.xrpjwk8.connectrn",
@@ -36,7 +37,8 @@
           }
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "./plugins/withVendorSymbols"
     ],
     "extra": {
       "eas": {

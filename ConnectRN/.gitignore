@@ -45,3 +45,6 @@ google-services.json
 # Never commit service-account credential exports
 *service-account*.json
 credentials.json
+
+# Local Python tooling cache
+scripts/__pycache__/
