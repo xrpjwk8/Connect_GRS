@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../theme/colors';
+import { useAppState } from '../state/AppState';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -67,8 +68,9 @@ function MyReservationsStackNavigator() {
 
 const MyPageStack = createNativeStackNavigator();
 function MyPageStackNavigator() {
+  const { studentVerificationOnEntry } = useAppState();
   return (
-    <MyPageStack.Navigator screenOptions={{ headerShown: false }}>
+    <MyPageStack.Navigator initialRouteName={studentVerificationOnEntry ? 'StudentVerification' : 'MyPage'} screenOptions={{ headerShown: false }}>
       <MyPageStack.Screen name="MyPage" component={MyPageScreen} />
       <MyPageStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
       <MyPageStack.Screen name="StudentVerification" component={StudentVerificationScreen} />
@@ -79,8 +81,10 @@ function MyPageStackNavigator() {
 const Tab = createBottomTabNavigator();
 
 export default function BookerTabNavigator() {
+  const { studentVerificationOnEntry } = useAppState();
   return (
     <Tab.Navigator
+      initialRouteName={studentVerificationOnEntry ? 'MyPageTab' : 'HomeTab'}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: AppColors.primaryDeep,

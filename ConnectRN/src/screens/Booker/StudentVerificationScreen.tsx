@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, Switch, Text, View } from 'react-native';
+import { Image, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
@@ -21,6 +21,7 @@ export default function StudentVerificationScreen() {
   const [file, setFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [consent, setConsent] = useState(false);
   const [picking, setPicking] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
   const verification = app.studentVerification;
   const status = verification?.status ?? 'draft';
   const canSubmit = !app.isPreview && !!app.session && (status === 'draft' || status === 'rejected');
@@ -31,7 +32,7 @@ export default function StudentVerificationScreen() {
       if (result.canceled) return;
       const selected = result.assets[0];
       if ((selected.size ?? 0) > MAX_STUDENT_CARD_BYTES) throw new Error('10MB 이하 파일을 선택해주세요.');
-      setFile(selected);
+      setPreviewError(false); setConsent(false); setFile(selected);
     } catch (e) { showAlert('파일 선택', errorMessage(e)); }
     finally { setPicking(false); }
   };
@@ -47,7 +48,7 @@ export default function StudentVerificationScreen() {
 
   return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}>
     <ScrollView contentContainerStyle={{ padding: 22, gap: 18 }}>
-      <GhostButton title="뒤로" onPress={() => navigation.goBack()} disabled={action.busy} />
+      <GhostButton title="뒤로" onPress={() => navigation.getState().index > 0 ? navigation.goBack() : navigation.replace('MyPage')} disabled={action.busy} />
       <Text style={T.headlineLG}>학생증 인증</Text>
       <Text style={[T.titleMD, { color: AppColors.primaryDeep }]}>{verificationLabel[status]}</Text>
       <Text style={T.bodyLG}>{app.realName || '이름 미입력'} · {app.schoolName || '학교 미입력'}</Text>
@@ -61,7 +62,20 @@ export default function StudentVerificationScreen() {
       {canSubmit && <>
         <Text style={T.bodyMD}>제출 파일은 본인과 관리자만 조회합니다. JPG·PNG·PDF, 최대 10MB.</Text>
         <GhostButton title={picking ? '파일 선택 중…' : '학생증 파일 선택'} onPress={pick} disabled={action.busy || picking} />
-        {file && <Text style={T.bodyMD}>{file.name}</Text>}
+        {file && <View style={{ padding: 14, gap: 10, borderWidth: 1, borderColor: AppColors.borderStrong, borderRadius: 16, backgroundColor: AppColors.white }}>
+          <Text style={T.titleMD}>제출할 파일 미리보기</Text>
+          <Text style={T.bodyMD}>{file.name}{file.size != null ? ` · ${Math.max(1, Math.round(file.size / 1024))}KB` : ''}</Text>
+          {file.mimeType === 'application/pdf' || /\.pdf$/i.test(file.name)
+            ? <Text style={T.bodyMD}>PDF는 이미지 미리보기를 지원하지 않습니다. 선택한 파일명을 확인해주세요.</Text>
+            : <>
+              <Image key={file.uri} accessibilityLabel="제출 전 선택한 학생증 이미지" source={{ uri: file.uri }}
+                style={{ width: '100%', height: 260, borderRadius: 8 }} resizeMode="contain" onError={() => setPreviewError(true)} />
+              {previewError ? <Text accessibilityRole="alert" style={{ color: AppColors.danger }}>이미지 미리보기를 불러오지 못했습니다. 파일을 다시 선택해주세요.</Text>
+                : <Text style={T.bodyMD}>이름·학교가 잘 보이고 불필요한 개인정보가 가려져 있는지 확인해주세요.</Text>}
+            </>}
+          <Text style={T.bodyMD}>아직 전송되지 않았습니다. 아래 제출 버튼을 눌러야 업로드됩니다.</Text>
+          <GhostButton title="선택한 파일 제거" disabled={action.busy || picking} onPress={() => { setFile(null); setConsent(false); setPreviewError(false); }} />
+        </View>}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Switch accessibilityLabel="학생증 심사 목적 제출 동의" value={consent} onValueChange={setConsent} disabled={action.busy} />
           <Text style={[T.bodyMD, { flex: 1 }]}>학생증을 신분 확인 목적으로 관리자에게 제출하는 데 동의합니다.</Text>

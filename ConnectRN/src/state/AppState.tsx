@@ -28,6 +28,7 @@ function useStateValue() {
   const [studentVerification, setStudentVerification] = useState<StudentVerification | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
+  const [studentVerificationOnEntry, setStudentVerificationOnEntry] = useState(false);
   const [ownerStoreRow, setOwnerStoreRow] = useState<StoreRow | null>(null);
   const [onboardingPath, setOnboardingPath] = useState<OnboardingDestination[]>([]);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -51,6 +52,7 @@ function useStateValue() {
   const [ownerFontScale, setOwnerFontScale] = useState<OwnerFontScale>('normal');
 
   const clearAccount = useCallback(() => {
+    setStudentVerificationOnEntry(false);
     setStudentVerification(null); setIsAdmin(false); setAdminPanelOpen(false);
     setProfile(null); setOwnerStoreRow(null); setMyReservations([]); setFavorites([]);
     setBlockedSlotsByDate({}); setSchoolName(''); setDepartmentName(''); setPosition('');
@@ -165,6 +167,7 @@ function useStateValue() {
   return {
     route, session: isPreview ? null : session, profile, ready, refreshing, loadError, refresh, ownerStore, ownerStoreRow, favorites,
     isPreview, enterPreview, studentVerification, isAdmin, adminPanelOpen, setAdminPanelOpen,
+    studentVerificationOnEntry, setStudentVerificationOnEntry,
     canBook: !isPreview && profile?.role === 'booker' && studentVerification?.status === 'approved',
     onboardingPath, selectedRole, schoolName, setSchoolName, departmentName, setDepartmentName,
     position, setPosition, realName, setRealName, schoolEmail, setSchoolEmail, phoneNumber, setPhoneNumber,

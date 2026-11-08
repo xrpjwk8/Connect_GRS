@@ -11,9 +11,9 @@ import AgreementSection from './AgreementSection';
 import { AppColors } from '../theme/colors';
 
 export default function AccountAccess({ role, signup = false }: { role: UserRole; signup?: boolean }) {
-  const { session, cancelSignUp, refresh, logout, enterPreview, isAdmin, setAdminPanelOpen } = useAppState();
+  const { session, ready, cancelSignUp, refresh, logout, enterPreview, isAdmin, setAdminPanelOpen, setStudentVerificationOnEntry } = useAppState();
   const [useEmailAuth, setUseEmailAuth] = useState(!__DEV__ || !signup);
-  const previewSignup = __DEV__ && signup && !useEmailAuth;
+  const previewSignup = __DEV__ && signup && !session && !useEmailAuth;
   const T = useTypography(role);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -24,7 +24,8 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
   const [department, setDepartment] = useState('');
   const [position, setPosition] = useState('');
   const [agreed, setAgreed] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [actionBusy, setBusy] = useState(false);
+  const busy = actionBusy || !ready;
   const busyRef = useRef(false);
   const [error, setError] = useState('');
   const normalized = email.trim().toLowerCase();
@@ -56,6 +57,7 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
     if (!agreed || !name.trim() || (role === 'booker' && !school.trim())) throw new Error('기본 정보와 필수 약관을 확인해주세요.');
     await rpc('complete_profile', { p_role: role, p_real_name: name.trim(), p_school_name: school.trim(),
       p_department_name: department.trim(), p_position: position.trim() });
+    if (role === 'booker') setStudentVerificationOnEntry(true);
     await refresh();
   });
   const field = (label: string, value: string, change: (value: string) => void) => (
@@ -71,24 +73,27 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={{ padding: 22, gap: 22 }} keyboardShouldPersistTaps="handled">
         <GhostButton title="뒤로" appRole={role} onPress={cancelSignUp} disabled={busy} />
-        <Text style={[T.headlineLG, { color: AppColors.ink }]}>{role === 'booker' ? '예약자' : '점주'} {signup ? '회원가입' : '로그인'}</Text>
+        <Text style={[T.headlineLG, { color: AppColors.ink }]}>{role === 'booker' ? '예약자' : '점주'} {session ? '가입 정보 확인' : signup ? '회원가입' : '로그인'}</Text>
+        {!ready ? <Text style={T.bodyLG}>인증된 계정을 확인하고 있습니다…</Text> : session ? <Text style={T.bodyLG}>{session.user.email} 이메일 인증 완료. 기본 정보와 필수 약관을 확인하면 {role === 'booker' ? '학생증 제출로 이어집니다.' : '가입이 완료됩니다.'}</Text> : null}
         {isAdmin && <GhostButton title="관리자 학생증 심사" appRole={role} onPress={() => setAdminPanelOpen(true)} />}
         {(signup || session) && <>
           <Text style={T.bodyLG}>기본 정보</Text>
           {field('이름', name, setName)}
           {role === 'booker' && <>{field('학교명', school, setSchool)}{field('학과 / 단체명', department, setDepartment)}{field('직책', position, setPosition)}</>}
           {!session && emailField}
+          {previewSignup && <View style={{ gap: 12 }}>
+            <LimeButton title="이메일 인증하기 (실제 가입)" appRole={role} disabled={busy} onPress={() => setUseEmailAuth(true)} />
+            <Text style={T.bodyMD}>학생증 제출이나 관리자 심사를 이용하려면 이메일 인증을 완료해주세요.</Text>
+          </View>}
         </>}
         {previewSignup ? <>
-          <Text style={T.bodyLG}>출시 전 테스트: 정보 입력과 약관 동의 없이도 앱을 둘러볼 수 있습니다. 실제 계정은 생성되지 않습니다.</Text>
+          <Text style={T.bodyLG}>테스트 미리보기: 아래 버튼은 이메일을 입력해도 인증하지 않습니다. 정보 입력과 약관 동의 없이 둘러볼 수 있으며 실제 계정이나 관리자 권한은 생성되지 않습니다.</Text>
           <AgreementSection onRequiredAgreedChange={setAgreed} appRole={role} />
-          <LimeButton title="가입 완료하기" appRole={role} disabled={busy}
+          <GhostButton title="가입 완료하기 (테스트 미리보기)" appRole={role} disabled={busy}
             onPress={() => enterPreview(role, { name, school, department, position, email })} />
-          <GhostButton title="이메일 인증으로 실제 가입" appRole={role} onPress={() => setUseEmailAuth(true)} />
         </> : session ? <>
-          <Text style={T.bodyLG}>{session.user.email} 이메일 인증 완료</Text>
           <AgreementSection onRequiredAgreedChange={setAgreed} appRole={role} />
-          <LimeButton title={busy ? '저장 중…' : '가입 완료하기'} onPress={complete} appRole={role} disabled={busy || !agreed || !name.trim() || (role === 'booker' && !school.trim())} />
+          <LimeButton title={busy ? '처리 중…' : role === 'booker' ? '가입 완료하고 학생증 제출하기' : '가입 완료하기'} onPress={complete} appRole={role} disabled={busy || !agreed || !name.trim() || (role === 'booker' && !school.trim())} />
           <GhostButton title="다른 계정으로 인증" onPress={logout} appRole={role} disabled={busy} />
         </> : <>
           <Text style={T.bodyLG}>이메일로 받은 인증번호를 입력해주세요.{role === 'booker' ? ' 학교 메일이 아니어도 가입할 수 있으며, 예약은 학생증 승인 후 이용할 수 있습니다.' : ''}</Text>
@@ -101,7 +106,7 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
           </View>
           <LimeButton title={busy ? '처리 중…' : '인증하고 계속'} onPress={verify} disabled={busy || !sentTo || !/^\d{6,10}$/.test(code)} appRole={role} />
         </>}
-        {__DEV__ && signup && useEmailAuth && <GhostButton title="테스트 가입으로 돌아가기" appRole={role} disabled={busy} onPress={() => setUseEmailAuth(false)} />}
+        {__DEV__ && signup && !session && useEmailAuth && <GhostButton title="테스트 가입으로 돌아가기" appRole={role} disabled={busy} onPress={() => setUseEmailAuth(false)} />}
         {error ? <Text accessibilityRole="alert" style={[T.bodyLG, { color: AppColors.danger }]}>{error}</Text> : null}
       </ScrollView>
     </KeyboardAvoidingView>
