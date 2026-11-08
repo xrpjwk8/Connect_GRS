@@ -44,6 +44,47 @@ export type Database = {
           },
         ]
       }
+      owner_schedule_events: {
+        Row: {
+          created_at: string
+          end_minute: number | null
+          id: string
+          memo: string
+          service_date: string
+          start_minute: number | null
+          store_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          end_minute?: number | null
+          id?: string
+          memo?: string
+          service_date: string
+          start_minute?: number | null
+          store_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          end_minute?: number | null
+          id?: string
+          memo?: string
+          service_date?: string
+          start_minute?: number | null
+          store_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_schedule_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -218,6 +259,97 @@ export type Database = {
           },
         ]
       }
+      student_verification_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: number
+          reason: string
+          request_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          reason?: string
+          request_id: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          reason?: string
+          request_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_verification_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_verifications: {
+        Row: {
+          created_at: string
+          document_path: string
+          real_name: string
+          rejection_reason: string
+          request_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          school_name: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_path: string
+          real_name: string
+          rejection_reason?: string
+          request_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_name: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_path?: string
+          real_name?: string
+          rejection_reason?: string
+          request_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school_name?: string
+          status?: string
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_verifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       time_blocks: {
         Row: {
           ends_at: string
@@ -255,6 +387,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_admin_invitation: { Args: never; Returns: boolean }
       approve_store: {
         Args: { p_approved: boolean; p_store_id: string }
         Returns: {
@@ -274,6 +407,29 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "stores"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      begin_student_verification: {
+        Args: { p_extension: string }
+        Returns: {
+          created_at: string
+          document_path: string
+          real_name: string
+          rejection_reason: string
+          request_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          school_name: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "student_verifications"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -405,6 +561,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      current_user_is_admin: { Args: never; Returns: boolean }
       decide_reservation: {
         Args: { p_accept: boolean; p_reservation_id: string }
         Returns: {
@@ -561,6 +718,34 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      review_student_verification: {
+        Args: {
+          p_approve: boolean
+          p_reason?: string
+          p_request_id: string
+          p_user_id: string
+        }
+        Returns: {
+          created_at: string
+          document_path: string
+          real_name: string
+          rejection_reason: string
+          request_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          school_name: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "student_verifications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       search_stores: {
         Args: {
           p_category?: string
@@ -589,6 +774,29 @@ export type Database = {
           to: "stores"
           isOneToOne: false
           isSetofReturn: true
+        }
+      }
+      submit_student_verification: {
+        Args: { p_request_id: string }
+        Returns: {
+          created_at: string
+          document_path: string
+          real_name: string
+          rejection_reason: string
+          request_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          school_name: string
+          status: string
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "student_verifications"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       update_store_capacity: {

@@ -26,6 +26,7 @@ import { supabase } from '../../lib/supabase';
 import { useServerAction, useServerQuery } from '../../hooks/useServer';
 import { showAlert } from '../../utils/alert';
 import type { Store } from '../../models/types';
+import { studentRestriction } from '../../utils/studentVerification';
 
 const MAX_CONSECUTIVE_SLOTS = 6;
 const WEEKDAY_LETTERS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -45,7 +46,7 @@ export default function StoreDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const store: Store = route.params.store;
-  const { selectedSearchDate, setSelectedBookerTab, favorites, session } = useAppState();
+  const { selectedSearchDate, setSelectedBookerTab, favorites, session, canBook, isPreview } = useAppState();
   const action = useServerAction();
   const isFavorite = favorites.some(f => f.id === store.id);
   const ALL_TIMES = Array.from({ length: ((store.closingMinute ?? 1470) - (store.openingMinute ?? 1020)) / 30 }, (_, i) => minuteLabel((store.openingMinute ?? 1020) + i * 30));
@@ -98,6 +99,7 @@ export default function StoreDetailScreen() {
   }, [selectedTimes]);
 
   const handleSubmit = () => action.run(async () => {
+    if (!canBook) throw new Error(studentRestriction);
     const payload = { p_store_id: store.id, p_service_date: serviceDate(anchor), ...slotSelection(selectedTimes),
       p_people: Number(peopleText), p_budget_per_person: budget ? Number(budget) : undefined,
       p_event_purpose: eventPurpose, p_request_message: requestMessage };
@@ -118,6 +120,7 @@ export default function StoreDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        {!canBook && !isPreview && <Text style={{ padding: 18, color: AppColors.primaryDeep }}>{studentRestriction}</Text>}
         <View style={styles.headerImage}>
           <Ionicons name={store.imageName as any} size={48} color="rgba(255,255,255,0.45)" />
           <Pressable style={styles.backBadge} onPress={() => navigation.goBack()} hitSlop={8}>

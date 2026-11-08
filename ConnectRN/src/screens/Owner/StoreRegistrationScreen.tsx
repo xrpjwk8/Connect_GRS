@@ -8,7 +8,7 @@ import { rpc, errorMessage } from '../../services/backend';
 import { supabase } from '../../lib/supabase';
 import { AppColors } from '../../theme/colors';
 export default function StoreRegistrationScreen() {
-  const { refresh, logout, session } = useAppState();
+  const { refresh, logout, session, isAdmin, setAdminPanelOpen } = useAppState();
   const T = useTypography('owner');
   const [name, setName] = useState(''); const [region, setRegion] = useState('신촌');
   const [category, setCategory] = useState('요리주점/포차'); const [capacity, setCapacity] = useState('');
@@ -32,6 +32,7 @@ export default function StoreRegistrationScreen() {
       <View key={label} style={{ gap: 8 }}><FormLabel title={label} appRole="owner" /><AppTextField appRole="owner" value={value} onChangeText={change} editable={!busy} keyboardType={label === '최대 정원' ? 'number-pad' : 'default'} /></View>)}
     {error ? <Text accessibilityRole="alert" style={[T.bodyLG, { color: AppColors.danger }]}>{error}</Text> : null}
     <LimeButton title={busy ? '등록 중…' : '매장 등록하기'} onPress={save} disabled={busy} appRole="owner" />
+    {isAdmin && <GhostButton title="관리자 학생증 심사" onPress={() => setAdminPanelOpen(true)} disabled={busy} appRole="owner" />}
     <GhostButton title="로그아웃" onPress={logout} disabled={busy} appRole="owner" />
   </ScrollView></SafeAreaView>;
 }

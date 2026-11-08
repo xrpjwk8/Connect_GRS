@@ -8,10 +8,11 @@ import { AppRadius } from '../../theme/radius';
 import { AppSpacing } from '../../theme/spacing';
 import { useAppState, useTypography } from '../../state/AppState';
 import type { ChatMessage, MyReservation } from '../../models/types';
+import { studentRestriction } from '../../utils/studentVerification';
 
 export default function ChatListScreen() {
   const navigation = useNavigation<any>();
-  const { ownerStore, selectedRole, myReservations, chatMessages, isPreview } = useAppState();
+  const { ownerStore, selectedRole, myReservations, chatMessages, isPreview, canBook } = useAppState();
   const isOwner = selectedRole === 'owner';
   const T = useTypography(selectedRole === 'owner' ? 'owner' : 'booker');
 
@@ -36,7 +37,7 @@ export default function ChatListScreen() {
           <Ionicons name="chatbubbles-outline" size={36} color={AppColors.inkSecondary} />
           <Text style={[T.titleMD, { color: AppColors.ink }]}>{isPreview ? '테스트 미리보기에서는 채팅할 수 없어요' : '대화 중인 예약이 없어요'}</Text>
           <Text style={[T.bodyMD, { color: AppColors.inkSecondary, textAlign: 'center' }]}>
-            {isPreview ? '학생증 인증과 채팅 연결 기능은 준비 중입니다.' : '채팅 기능은 준비 중입니다.'}
+            {isPreview ? '실제 계정에서 학생증을 제출해주세요. 채팅은 준비 중입니다.' : !isOwner && !canBook ? studentRestriction : '채팅 기능은 준비 중입니다.'}
           </Text>
         </View>
       ) : (

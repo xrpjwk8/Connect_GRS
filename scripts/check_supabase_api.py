@@ -55,7 +55,11 @@ def main():
     expect('private schema is not exposed', request('/rest/v1/admin_users?select=user_id',
            extra_headers={'Accept-Profile': 'private'}), 406, code='PGRST106')
     expect('Auth settings endpoint works', request('/auth/v1/settings'), 200, dict)
-    print('8 hosted API checks passed; authenticated JWT/OTP flows require separate testing.')
+    expect('student applications are private', request('/rest/v1/student_verifications?select=user_id&limit=1'), 401, code='42501')
+    expect('student review requires login', request('/rest/v1/rpc/review_student_verification',
+           {'p_user_id': str(uuid.uuid4()), 'p_request_id': str(uuid.uuid4()), 'p_approve': True}), 401, code='42501')
+    expect('admin invitation requires login', request('/rest/v1/rpc/accept_admin_invitation', {}), 401, code='42501')
+    print('11 hosted API checks passed; authenticated JWT/OTP flows require separate testing.')
 
 
 if __name__ == '__main__':

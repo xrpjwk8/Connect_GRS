@@ -20,6 +20,7 @@ import MyReservationsScreen from '../screens/Booker/MyReservationsScreen';
 import ReservationEditScreen from '../screens/Booker/ReservationEditScreen';
 import MyPageScreen from '../screens/Booker/MyPageScreen';
 import ProfileEditScreen from '../screens/Booker/ProfileEditScreen';
+import StudentVerificationScreen from '../screens/Booker/StudentVerificationScreen';
 import ChatListScreen from '../screens/Chat/ChatListScreen';
 import ChatScreen from '../screens/Chat/ChatScreen';
 
@@ -70,6 +71,7 @@ function MyPageStackNavigator() {
     <MyPageStack.Navigator screenOptions={{ headerShown: false }}>
       <MyPageStack.Screen name="MyPage" component={MyPageScreen} />
       <MyPageStack.Screen name="ProfileEdit" component={ProfileEditScreen} />
+      <MyPageStack.Screen name="StudentVerification" component={StudentVerificationScreen} />
     </MyPageStack.Navigator>
   );
 }

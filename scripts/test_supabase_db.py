@@ -74,6 +74,13 @@ class ReservationTests(unittest.TestCase):
             DB.rpc('complete_profile', [role, '테스트 사용자', '연세대학교', '동아리'], user)
         self.store = DB.rpc('register_store', ['캠퍼스 포차', '신촌', '주점', 40], OWNER)['id']
         DB.rpc('approve_store', [self.store, True], ADMIN)
+        # Existing reservation tests use genuinely approved fixture identities.
+        for user in [BOOKER, OTHER_BOOKER]:
+            draft = DB.rpc('begin_student_verification', ['jpg'], user)
+            DB.run(f"insert into storage.objects(bucket_id,name,owner_id) values "
+                   f"('student-cards',{literal(draft['document_path'])},{literal(user)});", user)
+            DB.rpc('submit_student_verification', [draft['request_id']], user)
+            DB.rpc('review_student_verification', [user, draft['request_id'], True, ''], ADMIN)
 
     def request(self, people=20, minute=1140, count=2, user=BOOKER, date=DAY, key=None):
         return DB.rpc('request_reservation', [self.store, date, minute, count, people, key or str(uuid.uuid4())], user)
@@ -95,7 +102,8 @@ class ReservationTests(unittest.TestCase):
 
     def test_verified_school_identity_and_immutable_role(self):
         self.assertSqlError('42501', lambda: DB.rpc('complete_profile', ['booker', '이름', '학교'], UNVERIFIED))
-        self.assertSqlError('42501', lambda: DB.rpc('complete_profile', ['booker', '이름', '학교'], NON_SCHOOL))
+        self.assertEqual(DB.rpc('complete_profile', ['booker', '이름', '학교'], NON_SCHOOL)['role'], 'booker')
+        self.assertSqlError('42501', lambda: self.request(user=NON_SCHOOL))
         self.assertSqlError('42501', lambda: DB.rpc('complete_profile', ['owner', '이름'], BOOKER))
         self.assertSqlError('42501', lambda: DB.rpc('register_store', ['가게', '신촌', '주점', 20], BOOKER))
 

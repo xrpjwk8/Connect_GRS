@@ -8,6 +8,7 @@ import { errorMessage, rpc } from '../services/backend';
 import { mapReservation, mapStore, minuteLabel, type ProfileRow, type StoreRow } from '../utils/reservation';
 import { showAlert } from '../utils/alert';
 import { getTypography, type AppRole, type OwnerFontScale } from '../theme/typography';
+import { type StudentVerification, studentRestriction } from '../utils/studentVerification';
 
 export type Route = 'onboarding' | 'bookerTabs' | 'ownerTabs';
 export type OnboardingDestination = 'bookerSignUp' | 'ownerSignUp' | 'bookerLogin' | 'ownerLogin';
@@ -24,6 +25,9 @@ function useStateValue() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [studentVerification, setStudentVerification] = useState<StudentVerification | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const [ownerStoreRow, setOwnerStoreRow] = useState<StoreRow | null>(null);
   const [onboardingPath, setOnboardingPath] = useState<OnboardingDestination[]>([]);
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -47,6 +51,7 @@ function useStateValue() {
   const [ownerFontScale, setOwnerFontScale] = useState<OwnerFontScale>('normal');
 
   const clearAccount = useCallback(() => {
+    setStudentVerification(null); setIsAdmin(false); setAdminPanelOpen(false);
     setProfile(null); setOwnerStoreRow(null); setMyReservations([]); setFavorites([]);
     setBlockedSlotsByDate({}); setSchoolName(''); setDepartmentName(''); setPosition('');
     setRealName(''); setSchoolEmail(''); setPhoneNumber(''); setProfileImageUri(null);
@@ -61,17 +66,21 @@ function useStateValue() {
     if (!current) { clearAccount(); setReady(true); setRefreshing(false); return; }
     setRefreshing(true); setLoadError(null);
     try {
+      const { data: admin, error: adminError } = await supabase.rpc('accept_admin_invitation');
+      if (adminError) throw adminError;
       const { data: p, error: pe } = await supabase.from('profiles').select('*').eq('id', current.user.id).maybeSingle();
       if (pe) throw pe;
-      const [stores, reservations, blocks, favoriteRows] = await Promise.all([
+      const [stores, reservations, blocks, favoriteRows, verification] = await Promise.all([
         supabase.from('stores').select('*').eq('owner_id', current.user.id).order('created_at').limit(1),
         supabase.from('reservations').select('*, stores(name)').order('starts_at', { ascending: false }),
         supabase.from('time_blocks').select('*'),
         supabase.from('favorites').select('stores(*)').eq('user_id', current.user.id),
+        supabase.from('student_verifications').select('*').eq('user_id', current.user.id).maybeSingle(),
       ]);
-      for (const response of [stores, reservations, blocks, favoriteRows]) if (response.error) throw response.error;
+      for (const response of [stores, reservations, blocks, favoriteRows, verification]) if (response.error) throw response.error;
       if (generation.current !== run || sessionRef.current?.user.id !== current.user.id) return;
       setProfile(p); setOwnerStoreRow(stores.data?.[0] ?? null);
+      setIsAdmin(admin === true); setStudentVerification(verification.data);
       setMyReservations((reservations.data ?? []).map(r => mapReservation(r, r.stores?.name ?? '매장')));
       const blocked: Record<string, string[]> = {};
       for (const b of blocks.data ?? []) {
@@ -155,7 +164,8 @@ function useStateValue() {
     : !session || !profile ? 'onboarding' : profile.role === 'owner' ? 'ownerTabs' : 'bookerTabs';
   return {
     route, session: isPreview ? null : session, profile, ready, refreshing, loadError, refresh, ownerStore, ownerStoreRow, favorites,
-    isPreview, enterPreview,
+    isPreview, enterPreview, studentVerification, isAdmin, adminPanelOpen, setAdminPanelOpen,
+    canBook: !isPreview && profile?.role === 'booker' && studentVerification?.status === 'approved',
     onboardingPath, selectedRole, schoolName, setSchoolName, departmentName, setDepartmentName,
     position, setPosition, realName, setRealName, schoolEmail, setSchoolEmail, phoneNumber, setPhoneNumber,
     profileImageUri, setProfileImageUri, selectedSearchDate, setSelectedSearchDate, lastSearchFilter, setLastSearchFilter,
@@ -165,7 +175,8 @@ function useStateValue() {
     storeNaverMapUrl, setStoreNaverMapUrl, storeKakaoMapUrl, setStoreKakaoMapUrl,
     selectedBookerTab, setSelectedBookerTab, ownerFontScale, setOwnerFontScale,
     chatMessages: [] as ChatMessage[],
-    sendChatMessage: (_id: string, _role: UserRole, _text: string) => showAlert('채팅 안내', isPreview ? previewRestriction : '채팅 기능은 아직 연결되지 않았습니다.'),
+    sendChatMessage: (_id: string, _role: UserRole, _text: string) => showAlert('채팅 안내', isPreview ? previewRestriction
+      : profile?.role === 'booker' && studentVerification?.status !== 'approved' ? studentRestriction : '채팅 기능은 아직 연결되지 않았습니다.'),
     goToBookerSignUp: () => navigateAuth('booker', 'bookerSignUp'),
     goToOwnerSignUp: () => navigateAuth('owner', 'ownerSignUp'),
     goToBookerLogin: () => navigateAuth('booker', 'bookerLogin'),

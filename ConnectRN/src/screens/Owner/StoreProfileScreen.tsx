@@ -15,7 +15,7 @@ import { GhostButton } from '../../components/Buttons';
 export default function StoreProfileScreen() {
   const navigation = useNavigation<any>();
   useRefreshOnFocus();
-  const { ownerStore, logout, ownerFontScale, setOwnerFontScale } = useAppState();
+  const { ownerStore, logout, ownerFontScale, setOwnerFontScale, isAdmin, setAdminPanelOpen } = useAppState();
   const Typography = useTypography('owner');
   const styles = useMemo(() => makeStyles(Typography), [Typography]);
 
@@ -57,6 +57,7 @@ export default function StoreProfileScreen() {
           onPress={() => navigation.navigate('StoreInfoEdit')}
           styles={styles}
         />
+        {isAdmin && <MenuRow icon="shield-checkmark-outline" title="관리자 학생증 심사" styles={styles} onPress={() => setAdminPanelOpen(true)} />}
         <MenuRow icon="card-outline" title="결제 수단 관리" styles={styles} />
         <MenuRow icon="document-text-outline" title="이용 약관" styles={styles} />
         <MenuRow icon="help-circle-outline" title="도움말 / FAQ" styles={styles} />
