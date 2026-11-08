@@ -17,6 +17,7 @@ export type Database = {
       chat_messages: {
         Row: {
           body: string
+          chat_epoch: number
           created_at: string
           id: string
           request_id: string
@@ -26,6 +27,7 @@ export type Database = {
         }
         Insert: {
           body: string
+          chat_epoch?: number
           created_at?: string
           id?: string
           request_id: string
@@ -35,6 +37,7 @@ export type Database = {
         }
         Update: {
           body?: string
+          chat_epoch?: number
           created_at?: string
           id?: string
           request_id?: string
@@ -92,32 +95,38 @@ export type Database = {
       notifications: {
         Row: {
           body: string
+          chat_epoch: number
           created_at: string
           id: string
           kind: string
           read_at: string | null
           reservation_id: string
           title: string
+          transfer_id: string | null
           user_id: string
         }
         Insert: {
           body: string
+          chat_epoch?: number
           created_at?: string
           id?: string
           kind: string
           read_at?: string | null
           reservation_id: string
           title: string
+          transfer_id?: string | null
           user_id: string
         }
         Update: {
           body?: string
+          chat_epoch?: number
           created_at?: string
           id?: string
           kind?: string
           read_at?: string | null
           reservation_id?: string
           title?: string
+          transfer_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -126,6 +135,13 @@ export type Database = {
             columns: ["reservation_id"]
             isOneToOne: false
             referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: false
+            referencedRelation: "reservation_transfers"
             referencedColumns: ["id"]
           },
           {
@@ -208,12 +224,130 @@ export type Database = {
         }
         Relationships: []
       }
+      reservation_transfers: {
+        Row: {
+          claim_request_id: string | null
+          completed_at: string | null
+          created_at: string
+          ends_at: string
+          from_affiliation: string
+          from_name: string
+          from_user_id: string
+          id: string
+          no_deposit_confirmed: boolean
+          owner_id: string
+          people: number
+          region: string
+          reservation_id: string
+          service_date: string
+          slot_count: number
+          start_minute: number
+          starts_at: string
+          status: string
+          store_id: string
+          store_name: string
+          terms: string
+          to_affiliation: string | null
+          to_name: string | null
+          to_user_id: string | null
+        }
+        Insert: {
+          claim_request_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          ends_at: string
+          from_affiliation: string
+          from_name: string
+          from_user_id: string
+          id?: string
+          no_deposit_confirmed: boolean
+          owner_id: string
+          people: number
+          region: string
+          reservation_id: string
+          service_date: string
+          slot_count: number
+          start_minute: number
+          starts_at: string
+          status?: string
+          store_id: string
+          store_name: string
+          terms: string
+          to_affiliation?: string | null
+          to_name?: string | null
+          to_user_id?: string | null
+        }
+        Update: {
+          claim_request_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          ends_at?: string
+          from_affiliation?: string
+          from_name?: string
+          from_user_id?: string
+          id?: string
+          no_deposit_confirmed?: boolean
+          owner_id?: string
+          people?: number
+          region?: string
+          reservation_id?: string
+          service_date?: string
+          slot_count?: number
+          start_minute?: number
+          starts_at?: string
+          status?: string
+          store_id?: string
+          store_name?: string
+          terms?: string
+          to_affiliation?: string | null
+          to_name?: string | null
+          to_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservation_transfers_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservation_transfers_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservation_transfers_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reservations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservation_transfers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservation_transfers_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reservations: {
         Row: {
           booker_affiliation: string
           booker_id: string | null
           booker_name: string
           budget_per_person: number | null
+          chat_epoch: number
           created_at: string
           created_by: string
           ends_at: string
@@ -236,6 +370,7 @@ export type Database = {
           booker_id?: string | null
           booker_name: string
           budget_per_person?: number | null
+          chat_epoch?: number
           created_at?: string
           created_by: string
           ends_at: string
@@ -258,6 +393,7 @@ export type Database = {
           booker_id?: string | null
           booker_name?: string
           budget_per_person?: number | null
+          chat_epoch?: number
           created_at?: string
           created_by?: string
           ends_at?: string
@@ -538,6 +674,7 @@ export type Database = {
           booker_id: string | null
           booker_name: string
           budget_per_person: number | null
+          chat_epoch: number
           created_at: string
           created_by: string
           ends_at: string
@@ -561,6 +698,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      claim_transfer: {
+        Args: { p_accept_terms: boolean; p_id: string; p_request_id: string }
+        Returns: string
       }
       complete_profile: {
         Args: {
@@ -593,6 +734,7 @@ export type Database = {
           booker_id: string | null
           booker_name: string
           budget_per_person: number | null
+          chat_epoch: number
           created_at: string
           created_by: string
           ends_at: string
@@ -634,6 +776,7 @@ export type Database = {
           booker_id: string | null
           booker_name: string
           budget_per_person: number | null
+          chat_epoch: number
           created_at: string
           created_by: string
           ends_at: string
@@ -658,6 +801,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_transfer: {
+        Args: {
+          p_memo?: string
+          p_no_deposit: boolean
+          p_reservation_id: string
+          p_terms: string
+        }
+        Returns: string
+      }
       current_user_is_admin: { Args: never; Returns: boolean }
       decide_reservation: {
         Args: { p_accept: boolean; p_reservation_id: string }
@@ -666,6 +818,7 @@ export type Database = {
           booker_id: string | null
           booker_name: string
           budget_per_person: number | null
+          chat_epoch: number
           created_at: string
           created_by: string
           ends_at: string
@@ -706,6 +859,7 @@ export type Database = {
           booker_id: string | null
           booker_name: string
           budget_per_person: number | null
+          chat_epoch: number
           created_at: string
           created_by: string
           ends_at: string
@@ -738,7 +892,21 @@ export type Database = {
           start_minute: number
         }[]
       }
+      get_transfer: { Args: { p_id: string }; Returns: Json }
+      list_transfers: {
+        Args: {
+          p_before_id?: string
+          p_before_time?: string
+          p_date?: string
+          p_limit?: number
+          p_minute?: number
+          p_people?: number
+          p_region?: string
+        }
+        Returns: Json
+      }
       mark_notification_read: { Args: { p_id: string }; Returns: undefined }
+      my_transfers: { Args: never; Returns: Json }
       register_push_device: {
         Args: { p_device_id: string; p_platform: string; p_token: string }
         Returns: undefined
@@ -797,6 +965,7 @@ export type Database = {
           booker_id: string | null
           booker_name: string
           budget_per_person: number | null
+          chat_epoch: number
           created_at: string
           created_by: string
           ends_at: string
@@ -884,6 +1053,7 @@ export type Database = {
         Args: { p_body: string; p_request_id: string; p_reservation_id: string }
         Returns: {
           body: string
+          chat_epoch: number
           created_at: string
           id: string
           request_id: string
@@ -898,8 +1068,32 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      // SQL NULL removes the photo; an empty previous photo also returns NULL.
+      send_chat_message_epoch: {
+        Args: {
+          p_body: string
+          p_epoch: number
+          p_request_id: string
+          p_reservation_id: string
+        }
+        Returns: {
+          body: string
+          chat_epoch: number
+          created_at: string
+          id: string
+          request_id: string
+          reservation_id: string
+          sender_id: string
+          sender_role: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "chat_messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_store_photo: {
+        // SQL accepts/returns NULL when removing the photo.
         Args: { p_path: string | null; p_store_id: string }
         Returns: string | null
       }
@@ -960,6 +1154,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      withdraw_transfer: { Args: { p_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

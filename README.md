@@ -130,3 +130,7 @@ xcodebuild -list -project Connect.xcodeproj
 매장 사진 서버 구성·검증 범위는 [Supabase 문서](supabase/README.md), 채팅·푸시 구현 현황은 [푸시 검토 보고서](docs/PUSH_IMPLEMENTATION_REVIEW.md)를 참고하세요.
 
 예약 상태 변경 알림·실제 채팅·앱 내 알림함과 Expo 발송 작업을 개발 서버에 연결했습니다. APNs/FCM 자격증명을 연결하고 iPhone 16 Pro Max·17에 재빌드 앱을 설치했습니다. 예약 신청·수락·거절·취소 및 양방향 채팅 푸시의 iOS 실기기 수신을 확인했으며, 새 채팅 푸시에 앞 120자 미리보기를 포함합니다. Android 실기기 수신은 미검증입니다. [구현 및 설정 절차](docs/PUSH_IMPLEMENTATION_REVIEW.md)를 참고하세요.
+
+## 확정 예약 양도 (RN)
+
+점주 통보형 즉시 양도와 홈 하단 최신 3건 → 전체 양도 보드 → 상세 흐름을 구현하고 개발 Supabase에 적용했습니다. 기존 예약의 일시·인원·좌석 점유를 유지하며 예약자만 변경합니다. 예약당 1회, 이용 시작 전까지, 예약금 없는 건에 한정합니다. 이전 대화는 읽기 전용으로 분리하고 점주·양쪽 예약자에게 알립니다. [구현·정책·검증 문서](docs/RESERVATION_TRANSFERS.md)를 참고하세요.

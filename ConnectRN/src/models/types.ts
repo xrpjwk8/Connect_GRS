@@ -40,6 +40,7 @@ export interface Store {
 }
 
 export interface MyReservation {
+  chatEpoch?: number;
   startsAt?: string;
   endsAt?: string;
   id: string;
@@ -64,6 +65,7 @@ export interface MyReservation {
 }
 
 export interface ChatMessage {
+  chatEpoch?: number;
   id: string;
   reservationId: string;
   senderRole: UserRole;

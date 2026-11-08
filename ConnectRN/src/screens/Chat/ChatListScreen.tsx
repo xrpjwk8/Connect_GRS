@@ -21,8 +21,8 @@ export default function ChatListScreen() {
     return isOwner ? chattable.filter((r) => r.storeId === ownerStore?.id) : chattable;
   }, [myReservations, isOwner, ownerStore?.id]);
 
-  const lastMessageOf = (reservationId: string): ChatMessage | undefined => {
-    const list = chatMessages.filter((m) => m.reservationId === reservationId);
+  const lastMessageOf = (reservationId: string, epoch = 0): ChatMessage | undefined => {
+    const list = chatMessages.filter((m) => m.reservationId === reservationId && (m.chatEpoch ?? 0) === epoch);
     return list[list.length - 1];
   };
 
@@ -47,8 +47,8 @@ export default function ChatListScreen() {
               key={res.id}
               res={res}
               isOwner={isOwner}
-              lastMessage={lastMessageOf(res.id)}
-              onPress={() => navigation.navigate('Chat', { reservationId: res.id })}
+              lastMessage={lastMessageOf(res.id, res.chatEpoch)}
+              onPress={() => navigation.navigate('Chat', { reservationId: res.id, chatEpoch: res.chatEpoch ?? 0 })}
             />
           ))}
         </ScrollView>

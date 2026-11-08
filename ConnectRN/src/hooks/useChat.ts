@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { fetchChat, sendMessage, type MessageRow } from '../services/chat';
 import { errorMessage } from '../services/backend';
 
-export function useChat(reservationId: string) {
+export function useChat(reservationId: string, epoch = 0) {
   const { session, isPreview } = useAppState(); const userId = session?.user.id;
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const currentMessages = useRef(messages); currentMessages.current = messages;
@@ -23,11 +23,11 @@ export function useChat(reservationId: string) {
     const run = generation.current;
     try {
       const newest = currentMessages.current.at(-1);
-      let page = await fetchChat(reservationId); const rows = [...page]; let pages = 1;
+      let page = await fetchChat(reservationId, undefined, epoch); const rows = [...page]; let pages = 1;
       // Backfill bursts missed while offline, rather than skipping the gap between pages.
       while (newest && page.length === 50 && page.at(-1)!.created_at >= newest.created_at && !page.some(m => m.id === newest.id) && pages < 10) {
         if (run !== generation.current) return;
-        page = await fetchChat(reservationId, page.at(-1)); rows.push(...page); pages++;
+        page = await fetchChat(reservationId, page.at(-1), epoch); rows.push(...page); pages++;
       }
       if (run !== generation.current) return;
       if (pages === 10 && page.at(-1)!.created_at > (newest?.created_at ?? '')) {
@@ -36,27 +36,27 @@ export function useChat(reservationId: string) {
       merge(rows); setError('');
     }
     catch (e) { if (run === generation.current) setError(errorMessage(e)); }
-  }, [userId, isPreview, reservationId, merge]);
+  }, [userId, isPreview, reservationId, epoch, merge]);
   useEffect(() => {
     ++generation.current; const run = generation.current;
     setMessages([]); setError(''); setHasOlder(false); setLoading(false); setSending(false); pending.current = null;
     if (!userId || isPreview) return;
     setLoading(true);
-    void fetchChat(reservationId).then(rows => { if (run === generation.current) { merge(rows); setHasOlder(rows.length === 50); } })
+    void fetchChat(reservationId, undefined, epoch).then(rows => { if (run === generation.current) { merge(rows); setHasOlder(rows.length === 50); } })
       .catch(e => { if (run === generation.current) setError(errorMessage(e)); })
       .finally(() => { if (run === generation.current) setLoading(false); });
-    const channel = supabase.channel(`chat:${reservationId}:${userId}`).on('postgres_changes', {
+    const channel = supabase.channel(`chat:${reservationId}:${epoch}:${userId}`).on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `reservation_id=eq.${reservationId}`,
     }, () => { void refresh(); }).subscribe(status => { if (status === 'SUBSCRIBED') void refresh(); });
     // Reconcile missed realtime events after reconnect/foreground; RLS applies to every fetch.
     const timer = setInterval(() => { if (AppState.currentState === 'active') void refresh(); }, 10000);
     const listener = AppState.addEventListener('change', state => { if (state === 'active') void refresh(); });
     return () => { ++generation.current; clearInterval(timer); listener.remove(); void supabase.removeChannel(channel); };
-  }, [userId, isPreview, reservationId, merge, refresh]);
+  }, [userId, isPreview, reservationId, epoch, merge, refresh]);
   const loadOlder = async () => {
     if (!messages[0] || pageLock.current || !userId || isPreview) return;
     pageLock.current = true; const run = generation.current; setLoading(true);
-    try { const rows = await fetchChat(reservationId, messages[0]); if (run === generation.current) { merge(rows); setHasOlder(rows.length === 50); setError(''); } }
+    try { const rows = await fetchChat(reservationId, messages[0], epoch); if (run === generation.current) { merge(rows); setHasOlder(rows.length === 50); setError(''); } }
     catch (e) { if (run === generation.current) setError(errorMessage(e)); }
     finally { pageLock.current = false; if (run === generation.current) setLoading(false); }
   };
@@ -67,7 +67,7 @@ export function useChat(reservationId: string) {
     pending.current ??= { body: text, requestId: randomUUID() };
     sendLock.current = true; setSending(true); const run = generation.current;
     try {
-      const row = await sendMessage(reservationId, text, pending.current.requestId);
+      const row = await sendMessage(reservationId, text, pending.current.requestId, epoch);
       if (run !== generation.current) return false;
       pending.current = null; merge([row]); setError(''); return true;
     } catch (e) {

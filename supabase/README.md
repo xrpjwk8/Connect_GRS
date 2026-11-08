@@ -143,3 +143,10 @@ RN 실제 로그인 후 관리자 권한을 확인하며, 프로필이 없으면
 - 푸시 현황: [검토 보고서](../docs/PUSH_IMPLEMENTATION_REVIEW.md).
 
 채팅·푸시 migration `20261108114023_chat_notifications`, `20261108114027_push_dispatcher`를 적용했습니다. Realtime과 매분 cron 실행 성공, DB 50개·RN 42개·원격 API 18개 검사를 확인했습니다. 상세 권한·재시도·남은 기기 설정은 [구현 문서](../docs/PUSH_IMPLEMENTATION_REVIEW.md)에 있습니다.
+
+## 확정 예약 양도 (2026-11-09 KST)
+
+`20261108225416_reservation_transfers`를 connectors-dev에 적용하고 타입을 재생성했습니다. 원예약 점유를 유지한 즉시 양도, 예약당 1회·동시 인수 차단, 공개 게시용 조회, 대화 세대 분리와 완료 알림을 추가했습니다. `python3 scripts/test_transfers_db.py`로 임시 DB 64개 테스트를 통과했습니다. [정책·RPC·검증 범위](../docs/RESERVATION_TRANSFERS.md)를 참고하세요.
+
+
+`20261108230844_transfer_memos`를 적용했습니다. `create_transfer(..., p_memo default '')`의 선택 메모는 최대 50자이며 이모지·줄바꿈을 서버에서 거부합니다. 메모는 private 테이블에 저장하고 양도자와 실제 인수자에게만 반환합니다. 기존 호출과 기존 양도는 빈 메모로 호환됩니다. 두 iPhone에서 세 계정을 전환해 양도·메모·알림·채팅 분리를 검증했습니다. [실기기 결과와 제한](../docs/verification/transfer-device-e2e-20261109.md)을 참고하세요.

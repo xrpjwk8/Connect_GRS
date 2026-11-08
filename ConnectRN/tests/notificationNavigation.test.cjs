@@ -27,3 +27,14 @@ test('missing notification, changed account and preview never navigate or mark r
   const f=fixture(config);assert.equal(await f.open(),false);assert.equal(f.calls.some(c=>c[0]==='navigate'||c[0]==='rpc'),false);
  }
 });
+
+test('transfer notification opens durable history rather than inaccessible old reservation', async () => {
+ const f=fixture({row:{kind:'reservation_transferred',reservation_id:'reservation',transfer_id:'transfer'}});
+ await f.open();assert.equal(f.calls.at(-1)[1],'TransferRecord');assert.equal(f.calls.at(-1)[2].transferId,'transfer');
+});
+test('chat notification pins original conversation epoch', async () => {
+ for(const epoch of [0,1]){
+  const f=fixture({row:{kind:'chat_message',reservation_id:'reservation',chat_epoch:epoch}});
+  await f.open();assert.equal(f.calls.at(-1)[2].chatEpoch,epoch);
+ }
+});

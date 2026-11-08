@@ -1,3 +1,5 @@
+import { myTransfers as fetchMyTransfers } from '../services/transfers';
+import type { ReservationTransfer } from '../models/transfers';
 import { unregisterPush } from '../services/pushNotifications';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState as NativeAppState, Platform } from 'react-native';
@@ -44,6 +46,7 @@ function useStateValue() {
   const [lastSearchFilter, setLastSearchFilter] = useState<SearchFilter | null>(null);
   const [myReservations, setMyReservations] = useState<MyReservation[]>([]);
   const [blockedSlotsByDate, setBlockedSlotsByDate] = useState<Record<string, string[]>>({});
+  const [transfers, setTransfers] = useState<ReservationTransfer[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [favorites, setFavorites] = useState<Store[]>([]);
   const [storePhotoWideUri, setStorePhotoWideUri] = useState<string | null>(null);
@@ -56,7 +59,7 @@ function useStateValue() {
   const clearAccount = useCallback(() => {
     setStudentVerificationOnEntry(false);
     setStudentVerification(null); setIsAdmin(false); setAdminPanelOpen(false);
-    setChatMessages([]); setProfile(null); setOwnerStoreRow(null); setMyReservations([]); setFavorites([]);
+    setTransfers([]); setChatMessages([]); setProfile(null); setOwnerStoreRow(null); setMyReservations([]); setFavorites([]);
     setBlockedSlotsByDate({}); setSchoolName(''); setDepartmentName(''); setPosition('');
     setRealName(''); setSchoolEmail(''); setPhoneNumber(''); setProfileImageUri(null);
     setStorePhotoWideUri(null); setStorePhotoSquareUri(null); setStoreNaverMapUrl(null); setStoreKakaoMapUrl(null);
@@ -74,17 +77,19 @@ function useStateValue() {
       if (adminError) throw adminError;
       const { data: p, error: pe } = await supabase.from('profiles').select('*').eq('id', current.user.id).maybeSingle();
       if (pe) throw pe;
-      const [stores, reservations, blocks, favoriteRows, verification, messages] = await Promise.all([
+      const [stores, reservations, blocks, favoriteRows, verification, messages, transferRows] = await Promise.all([
         supabase.from('stores').select('*').eq('owner_id', current.user.id).order('created_at').limit(1),
         supabase.from('reservations').select('*, stores(name)').order('starts_at', { ascending: false }),
         supabase.from('time_blocks').select('*'),
         supabase.from('favorites').select('stores(*)').eq('user_id', current.user.id),
         supabase.from('student_verifications').select('*').eq('user_id', current.user.id).maybeSingle(),
         supabase.from('chat_messages').select('*').order('created_at', { ascending: false }).limit(200),
+        p ? fetchMyTransfers() : Promise.resolve([]),
       ]);
       for (const response of [stores, reservations, blocks, favoriteRows, verification, messages]) if (response.error) throw response.error;
       if (generation.current !== run || sessionRef.current?.user.id !== current.user.id) return;
-      setChatMessages((messages.data ?? []).reverse().map(m => ({ id: m.id, reservationId: m.reservation_id, senderRole: m.sender_role as UserRole, text: m.body, timeLabel: new Date(m.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) })));
+      setTransfers(transferRows);
+      setChatMessages((messages.data ?? []).reverse().map(m => ({ chatEpoch: m.chat_epoch, id: m.id, reservationId: m.reservation_id, senderRole: m.sender_role as UserRole, text: m.body, timeLabel: new Date(m.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) })));
       setProfile(p); setOwnerStoreRow(stores.data?.[0] ?? null);
       setIsAdmin(admin === true); setStudentVerification(verification.data);
       setMyReservations((reservations.data ?? []).map(r => mapReservation(r, r.stores?.name ?? '매장')));
@@ -186,7 +191,7 @@ function useStateValue() {
     onboardingPath, selectedRole, schoolName, setSchoolName, departmentName, setDepartmentName,
     position, setPosition, realName, setRealName, schoolEmail, setSchoolEmail, phoneNumber, setPhoneNumber,
     profileImageUri, setProfileImageUri, selectedSearchDate, setSelectedSearchDate, lastSearchFilter, setLastSearchFilter,
-    myReservations, blockedSlotsByDate,
+    myReservations, transfers, blockedSlotsByDate,
     capacityOverbookingEnabled: ownerStoreRow?.allow_shared ?? true,
     storePhotoWideUri, setStorePhotoWideUri, storePhotoSquareUri, setStorePhotoSquareUri,
     storeNaverMapUrl, setStoreNaverMapUrl, storeKakaoMapUrl, setStoreKakaoMapUrl,

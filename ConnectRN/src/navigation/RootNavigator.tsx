@@ -1,3 +1,5 @@
+import TransferRegisterScreen from '../screens/Transfers/TransferRegisterScreen';
+import TransferDetailScreen from '../screens/Transfers/TransferDetailScreen';
 import NotificationInboxScreen from '../screens/Notifications/NotificationInboxScreen';
 import NotificationReservationScreen from '../screens/Notifications/NotificationReservationScreen';
 import ChatScreen from '../screens/Chat/ChatScreen';
@@ -27,6 +29,8 @@ export default function RootNavigator() {
   return <Stack.Navigator screenOptions={{ headerShown: false, gestureEnabled: true, fullScreenGestureEnabled: false }} screenListeners={{ state }}>
     <Stack.Screen name="Main" component={Main} />
     {app.session && app.profile && !app.isPreview && <>
+      <Stack.Screen name="TransferRegister" component={TransferRegisterScreen} />
+      <Stack.Screen name="TransferRecord" component={TransferDetailScreen} />
       <Stack.Screen name="NotificationInbox" component={NotificationInboxScreen} />
       <Stack.Screen name="NotificationReservation" component={NotificationReservationScreen} />
       <Stack.Screen name="NotificationChat" component={ChatScreen} />

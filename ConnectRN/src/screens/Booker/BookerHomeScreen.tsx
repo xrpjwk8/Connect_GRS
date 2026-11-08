@@ -1,3 +1,4 @@
+import TransferHomeSection from '../../components/TransferHomeSection';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -64,6 +65,7 @@ export default function BookerHomeScreen() {
           <Ionicons name="search-circle-outline" size={36} color={AppColors.inkSecondary} />
           <Text style={styles.emptyStateText}>위 검색창을 눌러{'\n'}조건에 맞는 단체석을 찾아보세요</Text>
         </View>
+        <TransferHomeSection />
       </ScrollView>
     </SafeAreaView>
   );
@@ -103,6 +105,6 @@ const styles = StyleSheet.create({
   },
   searchPlaceholder: { ...Typography.bodyLG, color: AppColors.neutral },
   chipRow: { gap: AppSpacing.s8 },
-  emptyState: { alignItems: 'center', gap: AppSpacing.s8, paddingVertical: AppSpacing.s40 },
+  emptyState: { alignItems: 'center', gap: AppSpacing.s8, paddingVertical: AppSpacing.s18 },
   emptyStateText: { ...Typography.bodyLG, color: AppColors.inkSecondary, textAlign: 'center' },
 });

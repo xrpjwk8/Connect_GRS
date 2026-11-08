@@ -1,3 +1,4 @@
+import ReservationTransferActions from '../../components/ReservationTransferActions';
 import BackButton from '../../components/BackButton';
 import { showAlert } from '../../utils/alert';
 import useNativeBack from '../../navigation/useNativeBack';
@@ -36,7 +37,8 @@ export default function NotificationReservationScreen() {
         { text: '돌아가기', style: 'cancel' },
         { text: '예약 취소', style: 'destructive', onPress: () => { void action.run(() => rpc('cancel_reservation', { p_reservation_id: reservation.id })); } },
       ])} />}
-      {!reservation.isManual && <GhostButton title="이 예약의 대화 보기" onPress={() => navigation.navigate('NotificationChat', { reservationId: reservation.id })} />}
+      <ReservationTransferActions reservation={reservation} />
+      {!reservation.isManual && <GhostButton title="이 예약의 대화 보기" onPress={() => navigation.navigate('NotificationChat', { reservationId: reservation.id, chatEpoch: reservation.chatEpoch ?? 0 })} />}
     </> : <Text style={T.bodyLG}>예약을 불러오는 중이거나 조회 권한이 없습니다.</Text>}
   </ScrollView></SafeAreaView>;
 }

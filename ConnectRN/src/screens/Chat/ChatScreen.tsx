@@ -30,14 +30,16 @@ export default function ChatScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { reservationId } = route.params;
-  const { selectedRole, myReservations, session, canBook, isPreview } = useAppState();
+  const { selectedRole, myReservations, session, canBook, isPreview, transfers } = useAppState();
   const role = selectedRole ?? 'booker';
   const isOwner = role === 'owner';
   const T = useTypography(role);
 
   const reservation = myReservations.find((r) => r.id === reservationId);
-  const chat = useChat(reservationId);
-  const canSend = !!reservation && ['pending','confirmed'].includes(reservation.status) && !isPreview && (isOwner || canBook);
+  const epoch = route.params.chatEpoch ?? 0;
+  const archived = transfers.find(t => t.reservation_id === reservationId && t.status === 'completed' && epoch === 0);
+  const chat = useChat(reservationId, epoch);
+  const canSend = !route.params.readOnly && epoch === (reservation?.chatEpoch ?? 0) && !!reservation && ['pending','confirmed'].includes(reservation.status) && !isPreview && (isOwner || canBook);
   const quickReplies = isOwner ? OWNER_QUICK_REPLIES : BOOKER_QUICK_REPLIES;
 
   const [draft, setDraft] = useState('');
@@ -49,7 +51,7 @@ export default function ChatScreen() {
     if (await chat.send(text)) setDraft('');
   };
 
-  const peerName = isOwner ? reservation?.bookerName || '예약자' : reservation?.storeName || '가게';
+  const peerName = isOwner ? (archived?.from_name ?? reservation?.bookerName) || '예약자' : (archived?.store_name ?? reservation?.storeName) || '가게';
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -59,6 +61,7 @@ export default function ChatScreen() {
         <View style={{ width: 44 }} />
       </View>
 
+      {archived && <Text style={[T.bodyMD, { padding: 16 }]}>양도 전 대화 · 읽기 전용</Text>}
       {reservation && (
         <View style={styles.reservationInfoBar}>
           <Ionicons name="calendar-outline" size={14} color={AppColors.inkSecondary} />

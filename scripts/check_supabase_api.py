@@ -69,7 +69,15 @@ def main():
     expect('device registration requires login', request('/rest/v1/rpc/register_push_device',
            {'p_device_id': str(uuid.uuid4()), 'p_token': 'ExpoPushToken[forbiddenProbe000]', 'p_platform': 'ios'}), 401, code='42501')
     expect('notification read requires login', request('/rest/v1/rpc/mark_notification_read', {'p_id': str(uuid.uuid4())}), 401, code='42501')
-    print('18 hosted API checks passed; authenticated JWT/OTP flows require separate testing.')
+    expect('transfer history requires login', request('/rest/v1/reservation_transfers?select=id&limit=1'), 401, code='42501')
+    expect('transfer board requires login', request('/rest/v1/rpc/list_transfers', {}), 401, code='42501')
+    expect('transfer creation requires login', request('/rest/v1/rpc/create_transfer',
+           {'p_reservation_id': str(uuid.uuid4()), 'p_terms': 'forbidden probe', 'p_no_deposit': True}), 401, code='42501')
+    expect('transfer claim requires login', request('/rest/v1/rpc/claim_transfer',
+           {'p_id': str(uuid.uuid4()), 'p_request_id': str(uuid.uuid4()), 'p_accept_terms': True}), 401, code='42501')
+    expect('versioned chat requires login', request('/rest/v1/rpc/send_chat_message_epoch',
+           {'p_reservation_id': str(uuid.uuid4()), 'p_body': 'forbidden probe', 'p_request_id': str(uuid.uuid4()), 'p_epoch': 1}), 401, code='42501')
+    print('23 hosted API checks passed; authenticated JWT/OTP flows require separate testing.')
 
 
 if __name__ == '__main__':

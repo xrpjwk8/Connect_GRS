@@ -1,3 +1,5 @@
+import TransferBoardScreen from '../screens/Transfers/TransferBoardScreen';
+import TransferDetailScreen from '../screens/Transfers/TransferDetailScreen';
 import React, { useEffect, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -32,6 +34,8 @@ function HomeStackNavigator() {
       <HomeStack.Screen name="BookerHome" component={BookerHomeScreen} />
       <HomeStack.Screen name="SearchResults" component={SearchResultsScreen} />
       <HomeStack.Screen name="StoreDetail" component={StoreDetailScreen} />
+      <HomeStack.Screen name="TransferBoard" component={TransferBoardScreen} />
+      <HomeStack.Screen name="TransferDetail" component={TransferDetailScreen} />
       <HomeStack.Screen name="Favorites" component={FavoritesScreen} />
       <HomeStack.Screen
         name="SearchFilter"

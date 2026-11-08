@@ -33,7 +33,7 @@ export function mapStore(row: StoreRow): Store {
 }
 export function mapReservation(row: ReservationRow, storeName: string): MyReservation {
   const [y, m, d] = row.service_date.split('-').map(Number);
-  return { id: row.id, storeId: row.store_id, storeName, imageSymbol: 'storefront-outline',
+  return { chatEpoch: row.chat_epoch, id: row.id, storeId: row.store_id, storeName, imageSymbol: 'storefront-outline',
     status: row.status as MyReservation['status'], people: row.people,
     budget: row.budget_per_person ?? undefined, dateValue: new Date(y, m - 1, d),
     startsAt: row.starts_at, endsAt: row.ends_at,

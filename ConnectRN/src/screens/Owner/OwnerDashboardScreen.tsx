@@ -154,7 +154,7 @@ function UpcomingCard({ res, styles }: { res: MyReservation; styles: ReturnType<
     <View style={styles.upcomingCard}>
       <View style={{ flex: 1, gap: 2 }}>
         <View style={styles.requestNameRow}>
-          <Text style={styles.requestName}>{bookerName}</Text>
+          <Text style={styles.requestName}>{bookerName}{res.chatEpoch ? ' · 양도된 예약' : ''}</Text>
           {res.isManual && <Text style={styles.manualTag}>(외부 예약)</Text>}
         </View>
         <Text style={styles.requestAffiliation}>{res.bookerAffiliation || res.eventPurpose || '단체 예약'}</Text>

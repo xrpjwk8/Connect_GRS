@@ -15,7 +15,7 @@ import AgreementSection from './AgreementSection';
 import { AppColors } from '../theme/colors';
 
 export default function AccountAccess({ role, signup = false }: { role: UserRole; signup?: boolean }) {
-  const { session, ready, refresh, logout, enterPreview, isAdmin, setAdminPanelOpen, setStudentVerificationOnEntry } = useAppState();
+  const { session, profile, ready, refresh, logout, enterPreview, isAdmin, setAdminPanelOpen, setStudentVerificationOnEntry } = useAppState();
   const [useEmailAuth, setUseEmailAuth] = useState(!__DEV__ || !signup);
   const previewSignup = __DEV__ && signup && !session && !useEmailAuth;
   const T = useTypography(role);
@@ -34,8 +34,6 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
   const goBack = useNativeBack(busy);
   const busyRef = useRef(false);
   const [error, setError] = useState('');
-  const [passwordMode, setPasswordMode] = useState(false);
-  const [password, setPassword] = useState('');
   const normalized = email.trim().toLowerCase();
   const emailValid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized);
   useEffect(() => {
@@ -64,12 +62,6 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
     if (error) throw error;
     // Auth state listener loads the server profile; local form values never grant access.
   });
-  const loginWithPassword = () => run(async () => {
-    if (!emailValid || !password) throw new Error('이메일과 비밀번호를 입력해주세요.');
-    const { error } = await supabase.auth.signInWithPassword({ email: normalized, password });
-    if (error) throw error;
-    setPassword('');
-  });
   const profileComplete = !!name.trim() && (role !== 'booker' || !!(school.trim() && department.trim() && position.trim()));
   const complete = () => run(async () => {
     if (!agreed || !profileComplete) throw new Error('기본 정보와 필수 약관을 확인해주세요.');
@@ -78,6 +70,12 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
     if (role === 'booker') setStudentVerificationOnEntry(true);
     await refresh();
   });
+  // A session arrives before its profile. Keep this component's draft state,
+  // but show no signup fields/terms until the server confirms a missing profile.
+  if (!ready || (session && profile)) return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}>
+    <ScreenHeader title="계정 확인" onBack={goBack} disabled appRole={role} />
+    <View style={{ padding: AppSpacing.s24 }}><Text style={T.bodyLG}>인증된 계정을 확인하고 있습니다…</Text></View>
+  </SafeAreaView>;
   const field = (label: string, value: string, change: (value: string) => void, placeholder: string) => (
     <View style={{ gap: 8 }}><FormLabel title={label} required appRole={role} />
       <AppTextField accessibilityLabel={`${label} 필수`} placeholder={placeholder} value={value} onChangeText={change} editable={!busy} appRole={role} /></View>
@@ -90,7 +88,7 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
   return <SafeAreaView style={{ flex: 1, backgroundColor: AppColors.surface }}>
     <ScreenHeader title={`${role === 'booker' ? '예약자' : '점주'} ${session ? '가입 정보 확인' : signup ? '회원가입' : '로그인'}`} onBack={goBack} disabled={busy} appRole={role} />
       <ScrollView automaticallyAdjustKeyboardInsets style={{ flex: 1 }} contentContainerStyle={{ padding: AppSpacing.s24, paddingTop: AppSpacing.s8, gap: AppSpacing.s20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
-        {!ready ? <Text style={T.bodyLG}>인증된 계정을 확인하고 있습니다…</Text> : session ? <Text style={T.bodyLG}>{session.user.email} 이메일 인증 완료. 기본 정보와 필수 약관을 확인하면 {role === 'booker' ? '학생증 제출로 이어집니다.' : '가입이 완료됩니다.'}</Text> : null}
+        {session ? <Text style={T.bodyLG}>{session.user.email} 이메일 인증 완료. 기본 정보와 필수 약관을 확인하면 {role === 'booker' ? '학생증 제출로 이어집니다.' : '가입이 완료됩니다.'}</Text> : null}
         {isAdmin && <GhostButton title="관리자 학생증 심사" appRole={role} onPress={() => setAdminPanelOpen(true)} />}
         {(signup || session) && <>
           <Text style={T.bodyLG}>기본 정보</Text>
@@ -115,28 +113,20 @@ export default function AccountAccess({ role, signup = false }: { role: UserRole
           <AgreementSection onRequiredAgreedChange={setAgreed} appRole={role} />
           <LimeButton title={busy ? '처리 중…' : role === 'booker' ? '가입 완료하고 학생증 제출하기' : '가입 완료하기'} onPress={complete} appRole={role} disabled={busy || !agreed || !profileComplete} />
           <GhostButton title="다른 계정으로 인증" onPress={logout} appRole={role} disabled={busy} />
-        </> : !signup && passwordMode ? <>
-          <Text style={T.bodyLG}>비밀번호가 설정된 계정으로 로그인해주세요.</Text>
-          {emailField}
-          <View style={{ gap: 8 }}><FormLabel title="비밀번호" required appRole={role} />
-            <AppTextField appRole={role} accessibilityLabel="비밀번호 필수" value={password} onChangeText={setPassword}
-              placeholder="비밀번호" secureTextEntry autoCapitalize="none" autoCorrect={false} textContentType="password" editable={!busy} />
-          </View>
-          <LimeButton title="로그인" loading={actionBusy} onPress={loginWithPassword} disabled={busy || !emailValid || !password} appRole={role} />
-          <GhostButton title="이메일 인증번호로 로그인" disabled={busy} appRole={role}
-            onPress={() => { setPasswordMode(false); setPassword(''); setError(''); }} />
         </> : <>
           <Text style={T.bodyLG}>이메일로 인증번호를 받은 뒤 아래에 입력해주세요.{role === 'booker' ? ' 학교 메일이 아니어도 가입할 수 있으며, 예약은 학생증 승인 후 이용할 수 있습니다.' : ''}</Text>
           {!signup && emailField}
           <LimeButton loading={requestingCode} title={requestingCode ? '인증번호 요청 중…' : cooldown ? `${cooldown}초 후 재요청` : '인증번호 요청'} onPress={requestCode} disabled={busy || !emailValid || cooldown > 0} appRole={role} />
-          {sentTo ? <Text style={T.bodyMD}>{sentTo}로 인증 메일을 요청했습니다. 메일함과 스팸함을 확인해주세요.</Text> : null}
+          <Text style={[T.bodyMD, { opacity: sentTo ? 1 : 0 }]} accessible={!!sentTo}
+            accessibilityElementsHidden={!sentTo} importantForAccessibility={sentTo ? 'auto' : 'no-hide-descendants'}
+            accessibilityLiveRegion="polite">
+            {'인증 메일을 요청했습니다.\n메일함과 스팸함을 확인해주세요.'}
+          </Text>
           <View style={{ gap: 8 }}><FormLabel title="인증번호" appRole={role} />
             <AppTextField appRole={role} value={code} placeholder="메일에 표시된 인증번호" keyboardType="number-pad" editable={!busy}
               onChangeText={v => setCode(v.replace(/\D/g, '').slice(0, 10))} />
           </View>
           <LimeButton title="인증하고 계속" onPress={verify} disabled={busy || !sentTo || !/^\d{6,10}$/.test(code)} appRole={role} />
-          {!signup && <GhostButton title="비밀번호로 로그인" disabled={busy} appRole={role}
-            onPress={() => { setPasswordMode(true); setCode(''); setError(''); }} />}
         </>}
         {__DEV__ && signup && !session && useEmailAuth && <GhostButton title="테스트 미리보기로 돌아가기" appRole={role} disabled={busy} onPress={() => setUseEmailAuth(false)} />}
         {error ? <Text accessibilityRole="alert" style={[T.bodyLG, { color: AppColors.danger }]}>{error}</Text> : null}

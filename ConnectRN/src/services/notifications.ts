@@ -11,6 +11,10 @@ export async function openNotification(id: string, userId: string) {
   const session = await supabase.auth.getSession();
   if (session.data.session?.user.id !== userId || developmentPreview.active) return false;
   await rpc('mark_notification_read', { p_id: id });
-  navigationRef.navigate(data.kind === 'chat_message' ? 'NotificationChat' : 'NotificationReservation', { reservationId: data.reservation_id });
+  if (data.kind === 'reservation_transferred' && data.transfer_id) {
+    navigationRef.navigate('TransferRecord', { transferId: data.transfer_id });
+    return true;
+  }
+  navigationRef.navigate(data.kind === 'chat_message' ? 'NotificationChat' : 'NotificationReservation', { reservationId: data.reservation_id, chatEpoch: data.chat_epoch ?? 0 });
   return true;
 }

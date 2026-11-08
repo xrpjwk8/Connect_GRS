@@ -1,3 +1,4 @@
+import ReservationTransferActions from '../../components/ReservationTransferActions';
 import { rpc } from '../../services/backend';
 import { useServerAction, useRefreshOnFocus } from '../../hooks/useServer';
 import { showAlert } from '../../utils/alert';
@@ -35,7 +36,7 @@ function dateAscending(a: MyReservation, b: MyReservation): number {
 
 export default function MyReservationsScreen() {
   const navigation = useNavigation<any>();
-  const { myReservations, ownerStore } = useAppState();
+  const { myReservations, ownerStore, transfers } = useAppState();
   const action = useServerAction();
   useRefreshOnFocus();
   const [filter, setFilter] = useState<FilterKey>('ongoing');
@@ -64,6 +65,7 @@ export default function MyReservationsScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}><DataStatus />
+        {transfers.filter(t => t.is_mine && t.status === 'completed').map(t => <GhostButton key={t.id} title={`양도 완료 · ${t.store_name} · ${t.service_date}`} onPress={() => navigation.navigate('TransferRecord', { transferId: t.id })} />)}
         <View style={styles.filterRow}>
           {FILTERS.map((f) => {
             const selected = f.key === filter;
@@ -283,6 +285,7 @@ function ReservationCard({
           </>
         )}
       </View>
+      <ReservationTransferActions reservation={res} />
     </Card>
   );
 }

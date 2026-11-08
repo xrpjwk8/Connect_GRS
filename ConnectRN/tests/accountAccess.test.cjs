@@ -13,9 +13,9 @@ const compiled = ts.transpileModule(source, { compilerOptions: {
   jsx: ts.JsxEmit.React, esModuleInterop: true,
 } }).outputText;
 
-function renderSignup(session, values = {}, development = true, role = 'booker', signup = true) {
+function renderSignup(session, values = {}, development = true, role = 'booker', signup = true, account = {}) {
   let stateIndex = 0;
-  const stateNames = ["useEmailAuth", "email", "code", "sentTo", "cooldown", "requestingCode", "name", "school", "department", "position", "agreed", "actionBusy", "error", "passwordMode", "password"];
+  const stateNames = ["useEmailAuth", "email", "code", "sentTo", "cooldown", "requestingCode", "name", "school", "department", "position", "agreed", "actionBusy", "error"];
   const box = ({ children }) => React.createElement('div', null, children);
   const button = ({ title, disabled, loading }) => React.createElement('button', { disabled, ...(loading ? { 'aria-busy': true } : {}) }, title);
   const dependencies = {
@@ -23,7 +23,7 @@ function renderSignup(session, values = {}, development = true, role = 'booker',
     react: { ...React, useState(initial) { const key = stateNames[stateIndex++]; return React.useState(key in values ? values[key] : initial); } },
     'react-native': { KeyboardAvoidingView: box, ScrollView: box, Text: box, View: box, Platform: { OS: 'web' } },
     'react-native-safe-area-context': { SafeAreaView: box },
-    '../state/AppState': { useAppState: () => ({ session, ready: true }), useTypography: () => ({}) },
+    '../state/AppState': { useAppState: () => ({ session, ready: true, profile: null, ...account }), useTypography: () => ({}) },
     '../lib/supabase': { supabase: {} },
     '../services/backend': {},
     './CommonComponents': { AppTextField: ({ placeholder, secureTextEntry }) => React.createElement('input', { placeholder, type: secureTextEntry ? 'password' : 'text' }), FormLabel: ({ title, required }) => title + (required ? '*' : '') },
@@ -47,6 +47,20 @@ test('verified user remount resumes profile completion, never development previe
   assert.match(html, /이메일 인증 완료/);
   assert.match(html, /가입 완료하고 학생증 제출하기/);
   assert.doesNotMatch(html, /테스트 미리보기|테스트 미리보기로 돌아가기|인증번호 요청/);
+});
+
+test('OTP session waits for profile before showing signup terms for either role or entry path', () => {
+  const session = { user: { email: 'existing@example.com' } };
+  for (const role of ['booker', 'owner']) for (const signup of [false, true]) {
+    for (const account of [{ ready: false }, { ready: true, profile: { role } }]) {
+      const html = renderSignup(session, {}, false, role, signup, account);
+      assert.match(html, /인증된 계정을 확인하고 있습니다/);
+      assert.doesNotMatch(html, /필수 약관|기본 정보|가입 정보 확인|가입 완료|<input|<button/);
+    }
+    const incomplete = renderSignup(session, {}, false, role, signup, { ready: true, profile: null });
+    assert.match(incomplete, /필수 약관/);
+    assert.match(incomplete, /가입 완료/);
+  }
 });
 
 test('unauthenticated development signup still offers blank preview and real authentication separately', () => {
@@ -102,14 +116,11 @@ test('both roles show loading only during OTP request, not cooldown, in login an
 });
 
 
-test('password login is available for both roles, masked and requires credentials', () => {
+test('both roles log in only with email verification codes', () => {
   for (const role of ['booker', 'owner']) {
-    const render = values => renderSignup(null, {passwordMode:true, ...values}, false, role, false);
-    assert.match(render({}), /type="password"/);
-    assert.match(render({}), /<button disabled="">로그인/);
-    assert.match(render({email:'review@example.com', password:'test-password'}), /<button>로그인/);
-    assert.doesNotMatch(render({}), /인증번호 요청|테스트 미리보기/);
-    assert.match(renderSignup(null, {}, false, role, false), /비밀번호로 로그인/);
-    assert.doesNotMatch(renderSignup(null, {}, false, role), /비밀번호로 로그인/);
+    const html = renderSignup(null, {}, false, role, false);
+    assert.match(html, /인증번호 요청/);
+    assert.match(html, /인증하고 계속/);
+    assert.doesNotMatch(html, /비밀번호|type="password"|테스트 미리보기/);
   }
 });

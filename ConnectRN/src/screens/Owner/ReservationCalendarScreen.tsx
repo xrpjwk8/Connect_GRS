@@ -209,7 +209,7 @@ function OwnerReservationCard({ r, styles }: { r: MyReservation; styles: ReturnT
       <View style={styles.reservationTopRow}>
         <View style={{ gap: 2 }}>
           <View style={styles.reservationNameRow}>
-            <Text style={styles.reservationName}>{r.bookerName || '예약자'}</Text>
+            <Text style={styles.reservationName}>{r.bookerName || '예약자'}{r.chatEpoch ? ' · 양도된 예약' : ''}</Text>
             {r.bookerAffiliation && <Text style={styles.reservationAffiliation}>{r.bookerAffiliation}</Text>}
             {r.isManual && <Text style={styles.reservationManualTag}>(외부 예약)</Text>}
           </View>
